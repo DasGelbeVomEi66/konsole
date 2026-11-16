@@ -106,7 +106,7 @@
     $('code').textContent = code;
     try {
       const q = qrcode(0, 'M'); q.addData(remoteURL()); q.make();
-      $('qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+      $('qr').innerHTML = q.createImgTag(8, 8, 'QR-Code für die Fernbedienung');
     } catch (e) { $('qr').textContent = 'QR-Code nicht verfügbar'; }
   }
 

@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="only light">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e9ecef">
@@ -15,7 +16,7 @@ PICTURE: das Handy selbst wird zum Gehäuse mit Steuerkreuz, A-Taste und B-Taste
 COLOUR and TYPE: Weiß, Hellgrau, Blau-LED; Nunito
 LAYOUT: Spalte wie eine echte Fernbedienung, Tasten mit großen Trefferflächen
 */
-:root{--blue:#34bdef}
+:root{color-scheme:only light;--blue:#34bdef}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#d9dde1;font-family:Nunito,system-ui,sans-serif;color:#5c6064;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
 .remote{position:fixed;inset:max(10px,env(safe-area-inset-top)) 12px max(10px,env(safe-area-inset-bottom));background:linear-gradient(90deg,#e6e9ec,#fff 30%,#fff 70%,#e3e6e9);border-radius:46px;box-shadow:0 10px 30px rgba(0,0,0,.18),inset 0 0 0 2px #fff;display:flex;flex-direction:column;align-items:center;padding:26px 0 22px;gap:2.2vh}

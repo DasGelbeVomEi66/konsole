@@ -5,7 +5,7 @@ PICTURE: 12 Kanal-Kacheln mit bewegten Vorschauen, darunter die geschwungene Lei
 COLOUR and TYPE: Weiß und Hellgrau, Akzent Himmelblau #34bdef; Nunito, rund und dick
 LAYOUT: Vollbild 16:9, Raster oben, Leiste unten, Kanäle füllen den ganzen Schirm
 */
-:root{--bg:#eceef0;--ink:#6f7377;--blue:#34bdef;--blue-d:#1b9fd6;--tile:#fdfdfd;--line:#c4c8cc}
+:root{color-scheme:only light;--bg:#eceef0;--ink:#6f7377;--blue:#34bdef;--blue-d:#1b9fd6;--tile:#fdfdfd;--line:#c4c8cc}
 *{box-sizing:border-box;min-width:0}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   font:16px/1.4 Nunito,"Arial Rounded MT Bold",system-ui,sans-serif;user-select:none;-webkit-user-select:none}
@@ -32,7 +32,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0}
 .pair-card h1{margin:0 0 18px;font-size:clamp(26px,3vw,38px);font-weight:900;color:#5c6064}
 .pair-grid{display:flex;gap:28px;align-items:center;justify-content:center;flex-wrap:wrap}
 .qr{width:220px;height:220px;border-radius:16px;background:#fff;display:grid;place-items:center;border:3px solid #e2e5e8;padding:8px}
-.qr svg,.qr img{width:100%;height:100%}
+.qr svg,.qr img{width:100%;height:100%;image-rendering:pixelated;forced-color-adjust:none}
 .pair-steps{text-align:left;max-width:330px;margin:0;padding-left:22px;font-weight:600;line-height:1.5}
 .pair-steps li{margin:6px 0}
 .pair-code{margin:18px 0 4px;font-weight:700}.pair-code b{font-size:30px;letter-spacing:.18em;color:var(--blue-d);margin-left:8px}
