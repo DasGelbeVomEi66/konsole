@@ -26,3 +26,10 @@ Kanal-Menü im Stil einer Wohnzimmer-Konsole, ein Obstschneide-Spiel und eine Ha
 Laptop und Handy brauchen Internet. Die Verbindung wird über den öffentlichen PeerJS-Server vermittelt, danach laufen die Daten direkt zwischen den Geräten.
 
 Tastatur am Laptop: Esc = HOME, Leertaste = A, Rücktaste = B, Pfeile bewegen den Cursor.
+
+## Kart-Kanal (Turbo-Flitzer)
+
+- 1 Spieler gegen 7 Computerfahrer oder 2 Spieler mit geteiltem Bildschirm gegen 6. Das zweite Handy koppelt sich über den QR-Code im Kart-Menü.
+- Im Rennen wechselt das Handy in den Lenkrad-Modus: quer halten, neigen zum Lenken. Tasten: GAS, BREMSE, DRIFT (halten in der Kurve, loslassen für Turbo), ITEM.
+- Tastatur: Spieler 1 Pfeile, Shift = Drift, Enter = Item. Spieler 2 WASD, F = Drift, E = Item.
+- Items: Turbo, Dreifach-Turbo, Ölfleck, Prallball, Suchdrohne, Schutzblase, Schrumpfwelle, Tintenwolke, Goldrausch.

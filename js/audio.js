@@ -65,6 +65,23 @@ const Sound = (() => {
     over() { const t = ctx.currentTime; [67, 64, 60, 55].forEach((m, i) => osc('triangle', mtof(m), t + i * 0.16, 0.2, 0.14, sfx, { wet: 1 })); },
     record() { const t = ctx.currentTime; [60, 64, 67, 72, 76, 79, 84].forEach((m, i) => osc('triangle', mtof(m), t + i * 0.07, 0.14, 0.12, sfx, { wet: 1 })); },
     tick() { const t = ctx.currentTime; osc('sine', 1400, t, 0.03, 0.12, sfx); },
+    beep() { const t = ctx.currentTime; osc('square', 440, t, 0.25, 0.1, sfx, { lp: 2000 }); },
+    beepGo() { const t = ctx.currentTime; osc('square', 880, t, 0.5, 0.12, sfx, { lp: 3000, wet: 1 }); },
+    pickup() { const t = ctx.currentTime; [76, 83, 88].forEach((m, i) => osc('triangle', mtof(m), t + i * 0.04, 0.08, 0.1, sfx, { wet: 1 })); },
+    roll() { const t = ctx.currentTime; osc('square', 1200 + Math.random() * 600, t, 0.02, 0.04, sfx, { lp: 4000 }); },
+    itemGet() { const t = ctx.currentTime; osc('triangle', mtof(84), t, 0.12, 0.13, sfx, { wet: 1 }); osc('triangle', mtof(91), t + 0.1, 0.2, 0.12, sfx, { wet: 1 }); },
+    boost() { const t = ctx.currentTime; noise(t, 0.6, 0.35, sfx, { type: 'bandpass', f: 400, to: 3000, q: 0.8 }); osc('sawtooth', 120, t, 0.5, 0.08, sfx, { to: 400, lp: 1500 }); },
+    spark() { const t = ctx.currentTime; noise(t, 0.05, 0.06, sfx, { type: 'highpass', f: 7000 }); },
+    spin() { const t = ctx.currentTime; osc('sawtooth', 700, t, 0.6, 0.1, sfx, { to: 120, lp: 2000 }); noise(t, 0.3, 0.2, sfx, { type: 'lowpass', f: 1200, to: 200 }); },
+    throw() { const t = ctx.currentTime; noise(t, 0.2, 0.2, sfx, { type: 'bandpass', f: 1500, to: 500 }); },
+    shield() { const t = ctx.currentTime; [60, 67, 72, 79].forEach((m, i) => osc('sine', mtof(m + 12), t + i * 0.03, 0.3, 0.07, sfx, { wet: 1 })); },
+    shrink() { const t = ctx.currentTime; osc('square', 1800, t, 0.7, 0.07, sfx, { to: 90, lp: 3000, wet: 1 }); },
+    gold() { const t = ctx.currentTime; [72, 76, 79, 84, 88].forEach((m, i) => osc('triangle', mtof(m), t + i * 0.05, 0.12, 0.1, sfx, { wet: 1 })); },
+    ink() { const t = ctx.currentTime; noise(t, 0.35, 0.3, sfx, { type: 'lowpass', f: 600, to: 150 }); },
+    lap() { const t = ctx.currentTime; osc('triangle', mtof(81), t, 0.15, 0.14, sfx, { wet: 1 }); osc('triangle', mtof(88), t + 0.15, 0.3, 0.14, sfx, { wet: 1 }); },
+    finalLap() { const t = ctx.currentTime; [72, 72, 79, 84].forEach((m, i) => osc('square', mtof(m), t + i * 0.12, 0.1, 0.08, sfx, { lp: 3000, wet: 1 })); },
+    finish() { const t = ctx.currentTime; [67, 72, 76, 79, 84, 79, 84].forEach((m, i) => osc('square', mtof(m), t + i * 0.11, i === 6 ? 0.6 : 0.1, 0.08, sfx, { lp: 3500, wet: 1 })); },
+    bump() { const t = ctx.currentTime; osc('sine', 140, t, 0.08, 0.3, sfx, { to: 60 }); },
   };
 
   // ---------- Musik ----------
@@ -97,6 +114,22 @@ const Sound = (() => {
       void arp;
     } },
   };
+  // Rennmusik: schneller Dur-Groove, 8 Takte, eigene Melodie
+  const RM = [[0,72,2],[2,76,2],[4,79,3],[7,81,1],[8,79,2],[10,76,2],[12,74,4],[16,76,2],[18,77,2],[20,79,2],[22,84,2],[24,83,4],[28,79,4],
+    [32,77,2],[34,76,2],[36,74,3],[39,72,1],[40,74,2],[42,76,2],[44,79,4],[48,81,2],[50,79,2],[52,77,2],[54,76,2],[56,74,6],[62,71,2],
+    [64,72,2],[66,76,2],[68,79,3],[71,81,1],[72,84,2],[74,86,2],[76,88,4],[80,86,2],[82,84,2],[84,81,2],[86,79,2],[88,81,4],[92,84,4],
+    [96,86,3],[99,84,1],[100,81,2],[102,79,2],[104,77,4],[108,79,2],[110,81,2],[112,79,4],[116,76,2],[118,74,2],[120,72,8]];
+  const raceMel = {}; RM.forEach(([st, n, l]) => raceMel[st] = [n, l]);
+  const raceCh = [[48,52,55],[53,57,60],[55,59,62],[52,55,59],[57,60,64],[53,57,60],[50,53,57],[55,59,62]];
+  tracks.race = { bpm: 148, len: 128, swing: 0, play(st, t, d) {
+    const bar = st >> 4, s = st & 15, ch = raceCh[bar], root = ch[0] - 12;
+    if (s % 4 === 0) osc('sine', 160, t, 0.1, 0.45, music, { to: 50, glide: 0.1 });
+    if (s === 4 || s === 12) noise(t, 0.12, 0.2, music, { type: 'bandpass', f: 2000, q: 0.6 });
+    noise(t, 0.02, s % 2 ? 0.025 : 0.045, music, { type: 'highpass', f: 9000 });
+    if (s % 2 === 1) osc('triangle', mtof(root + (s % 4 === 3 ? 12 : 0)), t, d * 0.9, 0.2, music, { rel: 0.04 });
+    if (s === 2 || s === 6 || s === 10 || s === 14) ch.forEach(n => osc('square', mtof(n + 12), t, d * 0.6, 0.018, music, { lp: 2400, rel: 0.04 }));
+    const m = raceMel[st]; if (m) { osc('square', mtof(m[0]), t, d * m[1] * 0.85, 0.045, music, { lp: 3200, rel: 0.06, wet: 1 }); osc('triangle', mtof(m[0] - 12), t, d * m[1] * 0.85, 0.05, music, { rel: 0.06 }); }
+  } };
   function ep(n, t, dur, v) { osc('sine', mtof(n), t, dur, v, music, { a: 0.008, rel: 0.25 }); osc('sine', mtof(n) * 2.01, t, dur * 0.3, v * 0.3, music, { rel: 0.1 }); }
   function bass(n, t, dur) { osc('triangle', mtof(n), t, dur, 0.2, music, { rel: 0.06 }); osc('sine', mtof(n - 12), t, dur, 0.12, music, { rel: 0.06 }); }
 
@@ -122,6 +155,18 @@ const Sound = (() => {
     init, s,
     play(name, ...a) { if (ctx && fx[name]) try { fx[name](...a); } catch (e) {} },
     music: playMusic, stopMusic,
+    // Motorgeräusch pro Spieler, Tonhöhe folgt der Geschwindigkeit
+    engine(pan = 0) {
+      if (!ctx) return { set() {}, stop() {} };
+      const o = ctx.createOscillator(), o2 = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain(), p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      o.type = 'sawtooth'; o2.type = 'square'; o2.detune.value = 7; f.type = 'lowpass'; f.frequency.value = 500; g.gain.value = 0;
+      o.connect(f); o2.connect(f); f.connect(g); if (p) { p.pan.value = pan; g.connect(p); p.connect(sfx); } else g.connect(sfx);
+      o.start(); o2.start();
+      return {
+        set(speed, on) { const t = ctx.currentTime, fr = 45 + speed * 3.2; o.frequency.setTargetAtTime(fr, t, 0.05); o2.frequency.setTargetAtTime(fr * 0.5, t, 0.05); f.frequency.setTargetAtTime(300 + speed * 25, t, 0.05); g.gain.setTargetAtTime(on ? 0.035 + Math.min(speed, 40) * 0.0012 : 0, t, 0.08); },
+        stop() { const t = ctx.currentTime; g.gain.setTargetAtTime(0, t, 0.05); o.stop(t + 0.3); o2.stop(t + 0.3); },
+      };
+    },
     setVol(v) { s.vol = Math.max(0, Math.min(1, v)); if (master) master.gain.value = s.vol; save(); },
     setMusic(on) { s.music = on; if (music) music.gain.value = on ? 0.55 : 0; if (on && ctx) next = ctx.currentTime + 0.05; save(); },
   };

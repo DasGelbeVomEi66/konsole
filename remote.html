@@ -50,6 +50,22 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
 .sheet label{display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-weight:800;border-bottom:1px solid #eceef0}
 .sheet input[type=checkbox]{width:26px;height:26px}
 .sheet input[type=range]{width:50%}
+.wheel{position:fixed;left:50%;top:50%;width:100vw;height:100vh;transform:translate(-50%,-50%);display:none;background:linear-gradient(#f4f5f6,#dfe2e5);z-index:4}
+.wheel.on{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:14px;padding:16px max(16px,env(safe-area-inset-left))}
+.wheel.rot{width:100vh;height:100vw}
+.wheel button{border:0;font:900 22px Nunito,sans-serif;color:#fff;border-radius:28px}
+.w-brake{background:linear-gradient(#ff6b6b,#d63031);box-shadow:0 6px 0 #a61e1e}
+.w-gas{background:linear-gradient(#5ee07a,#22a447);box-shadow:0 6px 0 #167a32}
+.w-mid{display:grid;grid-template-rows:auto 1fr 1.3fr auto;gap:10px;min-height:0}
+.w-info{text-align:center;font-weight:900;color:#5c6064;font-size:15px;line-height:1.3}
+.w-info b{font-size:28px;color:#1b9fd6}
+.w-item{background:linear-gradient(#ffd23d,#f0a500);box-shadow:0 5px 0 #b27a00}
+.w-drift{background:linear-gradient(#6fc8ff,#1b9fd6);box-shadow:0 5px 0 #11739c}
+.w-row{display:flex;gap:10px;align-items:center;justify-content:center}
+.w-row .home{width:46px;height:46px}
+.w-steer{flex:1;height:12px;border-radius:6px;background:#c9cdd1;position:relative;overflow:hidden}
+.w-steer i{position:absolute;top:0;bottom:0;left:50%;width:6px;margin-left:-3px;background:#1b9fd6;border-radius:3px}
+.wheel button.down{transform:translateY(4px);box-shadow:none}
 </style>
 </head>
 <body>
@@ -71,6 +87,16 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
 </div>
 <button class="opt" id="opt">Optionen</button>
 
+<div class="wheel" id="wheel">
+  <button class="w-brake" data-b="BRAKE">BREMSE</button>
+  <div class="w-mid">
+    <div class="w-info" id="w-info"><b>–</b><br>Handy quer halten und neigen</div>
+    <button class="w-item" data-b="ITEM">ITEM</button>
+    <button class="w-drift" data-b="DRIFT">DRIFT</button>
+    <div class="w-row"><div class="w-steer"><i id="w-steer"></i></div><button class="home" data-b="HOME" aria-label="Home"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 11 L12 3 L21 11 V21 H14 V14 H10 V21 H3Z" fill="#1b9fd6"/></svg></button></div>
+  </div>
+  <button class="w-gas" data-b="GAS">GAS</button>
+</div>
 <div class="sheet" id="sheet">
   <label>Links und rechts vertauschen <input type="checkbox" id="o-ix"></label>
   <label>Oben und unten vertauschen <input type="checkbox" id="o-iy"></label>
@@ -98,7 +124,7 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
   const params = new URLSearchParams(location.search);
   $('code').value = (params.get('c') || localStorage.getItem('kk-last') || '').toUpperCase();
 
-  let peer = null, conn = null, motionOn = false, wake = null;
+  let peer = null, conn = null, motionOn = false, wake = null, player = 0, mode = 'pointer';
   const setState = (t, on) => { $('state').textContent = t; $('led').classList.toggle('on', !!on); };
   const send = o => { if (conn && conn.open) try { conn.send(o); } catch (e) {} };
 
@@ -127,7 +153,14 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
         $('over').classList.add('hide'); setState('Verbunden mit ' + code, true);
         send({ t: 'hi' }); keepAwake();
       });
-      c.on('data', d => { if (d && d.t === 'screen') setState(d.ch ? d.ch : 'Verbunden mit ' + code, true); });
+      c.on('data', d => {
+        if (!d) return;
+        if (d.t === 'screen' && mode === 'pointer') setState((player ? 'Spieler ' + player + ' · ' : '') + (d.ch ? d.ch : 'Verbunden'), true);
+        else if (d.t === 'player') { player = d.n; $('led').style.background = player === 2 ? '#e5242f' : ''; setState('Spieler ' + player + ' verbunden', true); }
+        else if (d.t === 'mode') setMode(d.m);
+        else if (d.t === 'hud') $('w-info').innerHTML = '<b>' + d.pos + '.</b> Platz · Runde ' + d.lap + '<br>' + (d.item ? 'Item: ' + d.item : '&nbsp;');
+        else if (d.t === 'full') $('msg').textContent = 'Es sind schon zwei Fernbedienungen verbunden.';
+      });
       c.on('close', () => { conn = null; setState('Getrennt', false); $('over').classList.remove('hide'); $('msg').textContent = 'Verbindung verloren. Nochmal verbinden?'; });
       c.on('error', () => {});
     });
@@ -170,7 +203,34 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
     if (opt.ix) x = -x; if (opt.iy) y = -y;
     ax += x; ay += y;
   });
-  setInterval(() => { if ((ax || ay) && conn) { send({ t: 'm', x: +ax.toFixed(3), y: +ay.toFixed(3) }); } ax = ay = 0; }, 16);
+  setInterval(() => { if ((ax || ay) && conn && mode === 'pointer') { send({ t: 'm', x: +ax.toFixed(3), y: +ay.toFixed(3) }); } ax = ay = 0; }, 16);
+
+  // ---------- Lenkrad: Neigung des quer gehaltenen Handys ----------
+  let gx = 0, gy = -9.8, steer = 0, gam = 0;
+  addEventListener('deviceorientation', e => { if (e.gamma != null) gam = e.gamma; });
+  addEventListener('devicemotion', e => {
+    const a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
+    gx = gx * 0.75 + a.x * 0.25; gy = gy * 0.75 + a.y * 0.25;
+    const ang = Math.atan2(gy, gx), neutral = Math.cos(ang) >= 0 ? 0 : Math.PI;
+    let d = ang - neutral; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+    const deg = d * 180 / Math.PI, dz = 3;
+    let v = Math.abs(deg) < dz ? 0 : (deg - Math.sign(deg) * dz) / 35;
+    v = Math.max(-1, Math.min(1, v)); if (opt.ix) v = -v;
+    steer = v;
+  });
+  setInterval(() => {
+    if (mode !== 'wheel') return;
+    send({ t: 's', v: +steer.toFixed(3) });
+    $('w-steer').style.left = (50 + steer * 46) + '%';
+    const w = $('wheel'), portrait = innerHeight > innerWidth;
+    w.classList.toggle('rot', portrait);
+    w.style.transform = 'translate(-50%,-50%)' + (portrait ? (gam < 0 ? ' rotate(90deg)' : ' rotate(-90deg)') : '');
+  }, 33);
+  function setMode(m) {
+    mode = m; $('wheel').classList.toggle('on', m === 'wheel'); $('remote').style.visibility = m === 'wheel' ? 'hidden' : '';
+    $('opt').style.display = m === 'wheel' ? 'none' : '';
+    document.querySelectorAll('button.down').forEach(b => { b.classList.remove('down'); send({ t: 'b', b: b.dataset.b, d: 0 }); });
+  }
 
   // ---------- Tasten ----------
   document.querySelectorAll('[data-b]').forEach(b => {

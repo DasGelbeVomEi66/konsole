@@ -12,8 +12,13 @@
     cursor: { x: innerWidth / 2, y: innerHeight / 2, fromRemote: false },
     sens: store.get('kk-sens', 1),
     toast, closeChannel, showPair, openChannelById,
-    remoteConnected: () => !!conn,
-    send: obj => { try { conn && conn.open && conn.send(obj); } catch (e) {} },
+    remoteConnected: () => conns.size > 0,
+    players: () => [...conns.values()].map(x => x.player).sort(),
+    send: obj => { conns.forEach(x => { try { x.c.open && x.c.send(obj); } catch (e) {} }); },
+    sendTo: (player, obj) => { conns.forEach(x => { if (x.player === player) try { x.c.open && x.c.send(obj); } catch (e) {} }); },
+    addChannel: def => { CHANNELS.push(def); buildMenu(); },
+    qrHTML: () => $('qr').innerHTML,
+    code: () => code,
   };
 
   let screen = 'power', hovered = null, chan = null, chanDef = null, homeOpen = false, lastRemote = 0, pairReturn = 'menu';
@@ -53,10 +58,10 @@
   document.addEventListener('click', e => { const h = e.target.closest && e.target.closest('.hv'); if (h && !h.dataset.quiet && h.id !== 'power') Sound.play('select'); }, true);
 
   // ---------- Tasten (Fernbedienung und Tastatur) ----------
-  function button(name, down) {
+  function button(name, down, player = 1) {
     if (down) curEl.classList.toggle('press', name === 'A');
     else if (name === 'A') curEl.classList.remove('press');
-    if (chan && chan.onButton && !homeOpen && chan.onButton(name, down)) return;
+    if (chan && chan.onButton && !homeOpen && chan.onButton(name, down, player)) return;
     if (!down) return;
     switch (name) {
       case 'A':
@@ -94,7 +99,8 @@
   });
 
   // ---------- Fernbedienung über PeerJS ----------
-  let peer = null, conn = null, code = store.get('kk-code', null);
+  let peer = null, code = store.get('kk-code', null);
+  const conns = new Map();
   const ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   const newCode = () => Array.from({ length: 4 }, () => ALPH[Math.floor(Math.random() * ALPH.length)]).join('');
   function pairStatus(txt, ok) { const s = $('pair-status'); s.textContent = txt; s.classList.toggle('ok', !!ok); }
@@ -116,14 +122,18 @@
     if (typeof Peer === 'undefined') { pairStatus('Verbindungsbibliothek konnte nicht geladen werden.'); return; }
     try { peer = new Peer('kk-konsole-' + code.toLowerCase(), { debug: 0 }); }
     catch (e) { pairStatus('WebRTC ist hier nicht erlaubt. Bitte die GitHub-Version öffnen.'); return; }
-    peer.on('open', () => pairStatus(conn ? 'Fernbedienung verbunden' : 'Warte auf Fernbedienung …', !!conn));
+    peer.on('open', () => updPairStatus());
     peer.on('connection', c => {
       c.on('open', () => {
-        if (conn && conn !== c) try { conn.close(); } catch (e) {}
-        conn = c; onRemote(true);
+        const used = [...conns.values()].map(x => x.player);
+        let player = used.includes(1) ? (used.includes(2) ? 0 : 2) : 1;
+        if (!player) { try { c.send({ t: 'full' }); } catch (e) {} setTimeout(() => c.close(), 300); return; }
+        conns.set(c, { c, player });
+        try { c.send({ t: 'player', n: player }); } catch (e) {}
+        onRemote(true, player);
       });
-      c.on('data', onData);
-      c.on('close', () => { if (conn === c) { conn = null; onRemote(false); } });
+      c.on('data', d => { const x = conns.get(c); if (x) onData(d, x.player); });
+      c.on('close', () => { const x = conns.get(c); if (x) { conns.delete(c); onRemote(false, x.player); } });
       c.on('error', () => {});
     });
     let backoff = 1500;
@@ -136,31 +146,38 @@
     });
   }
 
-  function onRemote(on) {
-    $('home-remote-state').textContent = on ? 'Fernbedienung verbunden' : 'Keine Fernbedienung';
+  function updPairStatus() {
+    const ps = K.players();
+    const txt = ps.length ? ps.map(p => 'Spieler ' + p).join(' und ') + ' verbunden' : 'Warte auf Fernbedienung …';
+    pairStatus(txt, ps.length > 0);
+    $('home-remote-state').textContent = ps.length ? txt : 'Keine Fernbedienung';
+  }
+  function onRemote(on, player) {
+    updPairStatus();
     if (on) {
-      Sound.play('connect'); toast('Fernbedienung verbunden');
-      pairStatus('Fernbedienung verbunden', true);
-      setCursor(innerWidth / 2, innerHeight / 2);
+      Sound.play('connect'); toast('Fernbedienung ' + player + ' verbunden');
+      if (player === 1) setCursor(innerWidth / 2, innerHeight / 2);
       K.send({ t: 'screen', s: screen, ch: chanDef ? chanDef.name : '' });
-      if (screen === 'pair') setTimeout(leavePair, 900);
-    } else { toast('Fernbedienung getrennt'); pairStatus('Warte auf Fernbedienung …'); }
+      if (screen === 'pair' && K.players().length === 1 && pairReturn === 'boot') setTimeout(leavePair, 900);
+    } else toast('Fernbedienung ' + player + ' getrennt');
+    if (chan && chan.onRemotes) chan.onRemotes(K.players());
   }
 
-  function onData(d) {
+  function onData(d, player) {
     if (!d || typeof d !== 'object') return;
+    if (d.t === 's') { if (chan && chan.onSteer) chan.onSteer(d.v, player); return; }
     if (d.t === 'm') {
       lastRemote = performance.now(); K.cursor.fromRemote = true;
       const ppd = innerWidth / (40 / K.sens);
       setCursor(K.cursor.x + d.x * ppd, K.cursor.y + d.y * ppd);
-    } else if (d.t === 'b') button(d.b, !!d.d);
+    } else if (d.t === 'b') button(d.b, !!d.d, player);
     else if (d.t === 'c') { setCursor(innerWidth / 2, innerHeight / 2); lastRemote = performance.now(); }
   }
 
   // ---------- Menü ----------
-  const tileEls = [];
+  let tileEls = [];
   function buildMenu() {
-    const g = $('grid'); g.innerHTML = '';
+    const g = $('grid'); g.innerHTML = ''; tileEls = [];
     for (let i = 0; i < 12; i++) {
       const def = CHANNELS[i];
       const t = document.createElement('button');
@@ -219,7 +236,7 @@
   // ---------- Ereignisse ----------
   $('power').addEventListener('click', () => {
     Sound.init(); Sound.play('boot'); show('boot');
-    setTimeout(() => { if (conn) { show('menu'); } else showPair('boot'); Sound.music('menu'); }, 2400);
+    setTimeout(() => { if (conns.size) { show('menu'); } else showPair('boot'); Sound.music('menu'); }, 2400);
   });
   $('pair-skip').addEventListener('click', leavePair);
   $('pv-menu').addEventListener('click', backToMenu);
