@@ -93,8 +93,8 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
 <script>
 {
   const $ = id => document.getElementById(id);
-  const opt = Object.assign({ ix: false, iy: false, sw: false, dz: 2 }, (() => { try { return JSON.parse(localStorage.getItem('kk-remote') || '{}'); } catch (e) { return {}; } })());
-  const saveOpt = () => { try { localStorage.setItem('kk-remote', JSON.stringify(opt)); } catch (e) {} };
+  const opt = Object.assign({ ix: false, iy: false, sw: false, dz: 2 }, (() => { try { return JSON.parse(localStorage.getItem('kk-remote2') || '{}'); } catch (e) { return {}; } })());
+  const saveOpt = () => { try { localStorage.setItem('kk-remote2', JSON.stringify(opt)); } catch (e) {} };
   const params = new URLSearchParams(location.search);
   $('code').value = (params.get('c') || localStorage.getItem('kk-last') || '').toUpperCase();
 
@@ -150,6 +150,7 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
 
   // ---------- Bewegung: Drehrate des Gyroskops wird zu Cursor-Schritten ----------
   let ax = 0, ay = 0, lastT = 0, up = [0, 0, 1];
+  const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   addEventListener('deviceorientation', e => {
     if (e.beta == null) return;
     const b = e.beta * Math.PI / 180, g = (e.gamma || 0) * Math.PI / 180;
@@ -158,7 +159,9 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
   addEventListener('devicemotion', e => {
     const r = e.rotationRate; if (!r || r.alpha == null) return;
     const now = performance.now(), dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016; lastT = now;
-    const w = [r.beta || 0, r.gamma || 0, r.alpha || 0];                       // Drehrate um x, y, z in Grad/s
+    // Safari auf iPhone/iPad liefert die Drehraten in anderer Reihenfolge als Chrome auf Android:
+    // iOS: alpha = um x, beta = um y, gamma = um z. Spezifikation/Android: alpha = um z, beta = um x, gamma = um y.
+    const w = IOS ? [r.alpha || 0, r.beta || 0, r.gamma || 0] : [r.beta || 0, r.gamma || 0, r.alpha || 0]; // Drehrate um x, y, z in Grad/s
     let yaw = w[0] * up[0] + w[1] * up[1] + w[2] * up[2];                     // Drehung um die Senkrechte
     let pitch = w[0];                                                         // Kippen um die Querachse
     if (Math.abs(yaw) < opt.dz) yaw = 0; if (Math.abs(pitch) < opt.dz) pitch = 0;
