@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konsole</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap">
+<link rel="stylesheet" href="css/console.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Einschalten -->
+  <section id="scr-power" class="screen on">
+    <button id="power" class="hv power" aria-label="Konsole einschalten">
+      <svg viewBox="0 0 48 48" width="56" height="56"><path d="M24 6v16" stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M14 12a16 16 0 1 0 20 0" stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/></svg>
+    </button>
+    <p class="power-hint">Einschalten</p>
+  </section>
+
+  <!-- Startlogo -->
+  <section id="scr-boot" class="screen"><div class="boot-logo">Konsole</div></section>
+
+  <!-- Koppeln -->
+  <section id="scr-pair" class="screen">
+    <div class="pair-card">
+      <h1>Fernbedienung koppeln</h1>
+      <div class="pair-grid">
+        <div id="qr" class="qr"></div>
+        <ol class="pair-steps">
+          <li>Scanne den Code mit der iPhone-Kamera.</li>
+          <li>Tippe auf dem Handy auf „Bewegung erlauben“.</li>
+          <li>Halte das Handy hochkant wie eine Fernbedienung, Oberseite zum Bildschirm.</li>
+        </ol>
+      </div>
+      <p class="pair-code">Konsolen-Code <b id="code">····</b></p>
+      <p id="pair-status" class="pair-status">Warte auf Fernbedienung …</p>
+      <button id="pair-skip" class="hv btn">Mit Maus weiter</button>
+    </div>
+  </section>
+
+  <!-- Menü -->
+  <section id="scr-menu" class="screen">
+    <div id="grid" class="grid"></div>
+    <div class="dock">
+      <svg class="dock-shape" viewBox="0 0 1600 260" preserveAspectRatio="none">
+        <path d="M0 60 H420 C520 60 540 140 640 140 H960 C1060 140 1080 60 1180 60 H1600 V260 H0Z" fill="url(#dg)"/>
+        <path d="M0 60 H420 C520 60 540 140 640 140 H960 C1060 140 1080 60 1180 60 H1600" stroke="#34bdef" stroke-width="5" fill="none"/>
+        <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f5f6"/><stop offset="1" stop-color="#d9dcdf"/></linearGradient></defs>
+      </svg>
+      <button id="btn-settings" class="hv round left" aria-label="Einstellungen"><span>Konsole</span></button>
+      <div class="clock"><div id="clock-time">00:00</div><div id="clock-date">Mo 1.1.</div></div>
+      <button id="btn-mail" class="hv round right" aria-label="Pinnwand">
+        <svg viewBox="0 0 48 36" width="46" height="34"><rect x="3" y="3" width="42" height="30" rx="4" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M5 6 L24 21 L43 6" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- Kanal-Vorschau -->
+  <section id="scr-preview" class="screen">
+    <div id="preview-art" class="preview-art"></div>
+    <div class="preview-bar">
+      <button id="pv-menu" class="hv pill">Menü</button>
+      <button id="pv-start" class="hv pill">Start</button>
+    </div>
+  </section>
+
+  <!-- Kanal -->
+  <section id="scr-channel" class="screen"><div id="channel"></div></section>
+
+  <!-- HOME-Menü -->
+  <div id="home" class="home">
+    <div class="home-top"><span>HOME-Menü</span><button id="home-close" class="hv home-x">Schließen</button></div>
+    <div class="home-mid">
+      <button id="home-menu" class="hv home-btn">Konsolen-Menü</button>
+      <button id="home-reset" class="hv home-btn">Kanal neu starten</button>
+    </div>
+    <div class="home-bottom">
+      <div class="home-remote">
+        <span id="home-remote-state">Keine Fernbedienung</span>
+        <button id="home-pair" class="hv btn small">Koppeln</button>
+      </div>
+      <div class="home-vol">
+        <button id="home-voldown" class="hv btn small">−</button>
+        <div class="volbar"><i id="home-volfill"></i></div>
+        <button id="home-volup" class="hv btn small">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <div id="cursor" class="cursor">
+    <svg viewBox="0 0 64 80" width="54" height="68">
+      <g transform="rotate(-18 32 40)">
+        <path d="M24 8c0-4 7-4 7 0v22l2-1c0-4 7-4 7 0v3c0-4 7-4 7 0v4c0-4 7-4 7 0v15c0 13-8 22-20 22h-2c-9 0-14-5-18-12l-8-14c-2-4 3-7 6-4l5 6V8z"
+          fill="#fff" stroke="#1b9fd6" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M31 30v14M40 32v12M47 36v9" stroke="#1b9fd6" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<script src="lib/peerjs.min.js"></script>
+<script src="lib/qrcode.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/fruit.js"></script>
+<script src="js/channels.js"></script>
+<script src="js/console.js"></script>
+</body>
+</html>

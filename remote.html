@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e9ecef">
+<title>Fernbedienung</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
+<style>
+/*
+VOICE: Werkzeug in der Hand, groß, eindeutig
+IDEA: weiße Fernbedienung, hochkant
+PICTURE: das Handy selbst wird zum Gehäuse mit Steuerkreuz, A-Taste und B-Taste
+COLOUR and TYPE: Weiß, Hellgrau, Blau-LED; Nunito
+LAYOUT: Spalte wie eine echte Fernbedienung, Tasten mit großen Trefferflächen
+*/
+:root{--blue:#34bdef}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#d9dde1;font-family:Nunito,system-ui,sans-serif;color:#5c6064;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+.remote{position:fixed;inset:max(10px,env(safe-area-inset-top)) 12px max(10px,env(safe-area-inset-bottom));background:linear-gradient(90deg,#e6e9ec,#fff 30%,#fff 70%,#e3e6e9);border-radius:46px;box-shadow:0 10px 30px rgba(0,0,0,.18),inset 0 0 0 2px #fff;display:flex;flex-direction:column;align-items:center;padding:26px 0 22px;gap:2.2vh}
+.top{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;color:#9aa0a5}
+.led{width:12px;height:12px;border-radius:50%;background:#c4c8cc}
+.led.on{background:var(--blue);box-shadow:0 0 10px var(--blue)}
+.dpad{position:relative;width:min(44vw,180px);aspect-ratio:1;margin-top:1vh}
+.dpad button{position:absolute;background:linear-gradient(#5c6064,#3d4145);border:0;color:#cfd3d6;font-size:18px}
+.dpad .u,.dpad .d{left:33%;width:34%;height:38%}.dpad .u{top:0;border-radius:10px 10px 0 0}.dpad .d{bottom:0;border-radius:0 0 10px 10px}
+.dpad .l,.dpad .r{top:33%;height:34%;width:38%}.dpad .l{left:0;border-radius:10px 0 0 10px}.dpad .r{right:0;border-radius:0 10px 10px 0}
+.dpad .c{position:absolute;left:33%;top:33%;width:34%;height:34%;background:#3d4145}
+.btnA{width:min(30vw,128px);aspect-ratio:1;border-radius:50%;border:0;background:radial-gradient(circle at 40% 30%,#fff,#e3e6e9);box-shadow:0 6px 0 #b9bec3,0 8px 16px rgba(0,0,0,.2);font:900 44px Nunito,sans-serif;color:#7d8287;margin-top:1vh}
+.row3{display:flex;gap:6vw;align-items:center;margin-top:1vh}
+.sm{width:56px;height:56px;border-radius:50%;border:0;background:linear-gradient(#fff,#e3e6e9);box-shadow:0 4px 0 #c4c8cc;font:900 26px Nunito,sans-serif;color:#7d8287}
+.home{width:56px;height:56px;border-radius:50%;border:0;background:linear-gradient(#fff,#e3e6e9);box-shadow:0 4px 0 #c4c8cc;display:grid;place-items:center}
+.btnB{flex:1;width:72%;max-height:150px;min-height:80px;border-radius:30px;border:0;background:linear-gradient(#f1f3f5,#d8dce0);box-shadow:inset 0 3px 6px rgba(0,0,0,.08),0 4px 0 #c4c8cc;font:900 36px Nunito,sans-serif;color:#7d8287}
+.center{border:0;background:none;font:800 15px Nunito,sans-serif;color:#1b9fd6;padding:10px 18px;border-radius:999px;border:2px solid #b9e6f8}
+.brand{font-weight:900;color:#c4c8cc;letter-spacing:.1em;font-size:13px}
+button.down{transform:translateY(3px);filter:brightness(.92)}
+.btnA.down{box-shadow:0 2px 0 #b9bec3}
+.over{position:fixed;inset:0;background:#eceef0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;padding:30px;text-align:center;z-index:5}
+.over.hide{display:none}
+.over h1{margin:0;font-size:30px;font-weight:900;color:#4c5054}
+.over p{margin:0;font-weight:700;line-height:1.45;max-width:320px}
+.over input{font:900 34px Nunito,sans-serif;letter-spacing:.3em;text-align:center;width:220px;padding:10px;border-radius:18px;border:3px solid #c4c8cc;text-transform:uppercase;color:#1b9fd6;background:#fff;user-select:text;-webkit-user-select:text}
+.big{font:900 20px Nunito,sans-serif;background:var(--blue);color:#fff;border:0;border-radius:999px;padding:16px 30px;box-shadow:0 5px 0 #1b8fbf}
+.msg{color:#e5242f;min-height:1.4em}
+.opt{position:fixed;right:22px;top:max(22px,env(safe-area-inset-top));z-index:3;border:0;background:none;font:800 13px Nunito,sans-serif;color:#9aa0a5;padding:10px}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:26px 26px 0 0;padding:22px 22px max(22px,env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.2);z-index:6;transform:translateY(110%);transition:transform .3s}
+.sheet.on{transform:none}
+.sheet label{display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-weight:800;border-bottom:1px solid #eceef0}
+.sheet input[type=checkbox]{width:26px;height:26px}
+.sheet input[type=range]{width:50%}
+</style>
+</head>
+<body>
+<div class="remote" id="remote">
+  <div class="top"><span class="led" id="led"></span><span id="state">Nicht verbunden</span></div>
+  <div class="dpad">
+    <button class="u" data-b="UP">▲</button><button class="d" data-b="DOWN">▼</button>
+    <button class="l" data-b="LEFT">◀</button><button class="r" data-b="RIGHT">▶</button><div class="c"></div>
+  </div>
+  <button class="btnA" data-b="A">A</button>
+  <div class="row3">
+    <button class="sm" data-b="MINUS">−</button>
+    <button class="home" data-b="HOME" aria-label="Home"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M3 11 L12 3 L21 11 V21 H14 V14 H10 V21 H3Z" fill="#1b9fd6"/></svg></button>
+    <button class="sm" data-b="PLUS">+</button>
+  </div>
+  <button class="center" id="center">Cursor zentrieren</button>
+  <button class="btnB" data-b="B">B</button>
+  <div class="brand">FERNBEDIENUNG</div>
+</div>
+<button class="opt" id="opt">Optionen</button>
+
+<div class="sheet" id="sheet">
+  <label>Links und rechts vertauschen <input type="checkbox" id="o-ix"></label>
+  <label>Oben und unten vertauschen <input type="checkbox" id="o-iy"></label>
+  <label>Achsen tauschen <input type="checkbox" id="o-sw"></label>
+  <label>Ruhezone gegen Zittern <input type="range" id="o-dz" min="0" max="8" step="0.5"></label>
+  <label>Verbindung <button class="center" id="o-re">Neu verbinden</button></label>
+  <p style="text-align:center;margin:14px 0 0"><button class="big" id="o-close">Fertig</button></p>
+</div>
+
+<div class="over" id="over">
+  <h1>Fernbedienung</h1>
+  <p>Gib den Code ein, der auf dem Bildschirm der Konsole steht.</p>
+  <input id="code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false">
+  <button class="big" id="go">Bewegung erlauben &amp; verbinden</button>
+  <p class="msg" id="msg"></p>
+  <p style="font-size:14px;color:#9aa0a5">Handy hochkant halten, Oberseite zeigt zum Bildschirm. Mit A wählst du aus, mit B gehst du zurück.</p>
+</div>
+
+<script src="lib/peerjs.min.js"></script>
+<script>
+{
+  const $ = id => document.getElementById(id);
+  const opt = Object.assign({ ix: false, iy: false, sw: false, dz: 2 }, (() => { try { return JSON.parse(localStorage.getItem('kk-remote') || '{}'); } catch (e) { return {}; } })());
+  const saveOpt = () => { try { localStorage.setItem('kk-remote', JSON.stringify(opt)); } catch (e) {} };
+  const params = new URLSearchParams(location.search);
+  $('code').value = (params.get('c') || localStorage.getItem('kk-last') || '').toUpperCase();
+
+  let peer = null, conn = null, motionOn = false, wake = null;
+  const setState = (t, on) => { $('state').textContent = t; $('led').classList.toggle('on', !!on); };
+  const send = o => { if (conn && conn.open) try { conn.send(o); } catch (e) {} };
+
+  async function askMotion() {
+    try {
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        const r = await DeviceMotionEvent.requestPermission(); if (r !== 'granted') return false;
+      }
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try { await DeviceOrientationEvent.requestPermission(); } catch (e) {}
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function connect(code) {
+    $('msg').textContent = 'Verbinde …';
+    if (typeof Peer === 'undefined') { $('msg').textContent = 'Verbindungsbibliothek fehlt.'; return; }
+    if (peer) try { peer.destroy(); } catch (e) {}
+    peer = new Peer({ debug: 0 });
+    peer.on('open', () => {
+      const c = peer.connect('kk-konsole-' + code.toLowerCase(), { reliable: true, serialization: 'json' });
+      const to = setTimeout(() => { if (!c.open) $('msg').textContent = 'Konsole nicht gefunden. Code prüfen und Konsole geöffnet lassen.'; }, 8000);
+      c.on('open', () => {
+        clearTimeout(to); conn = c; localStorage.setItem('kk-last', code);
+        $('over').classList.add('hide'); setState('Verbunden mit ' + code, true);
+        send({ t: 'hi' }); keepAwake();
+      });
+      c.on('data', d => { if (d && d.t === 'screen') setState(d.ch ? d.ch : 'Verbunden mit ' + code, true); });
+      c.on('close', () => { conn = null; setState('Getrennt', false); $('over').classList.remove('hide'); $('msg').textContent = 'Verbindung verloren. Nochmal verbinden?'; });
+      c.on('error', () => {});
+    });
+    peer.on('error', e => {
+      if (e.type === 'peer-unavailable') $('msg').textContent = 'Konsole mit diesem Code nicht gefunden.';
+      else $('msg').textContent = 'Verbindungsfehler (' + e.type + ').';
+    });
+  }
+
+  async function keepAwake() { try { if ('wakeLock' in navigator) wake = await navigator.wakeLock.request('screen'); } catch (e) {} }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && conn) keepAwake(); });
+
+  $('go').addEventListener('click', async () => {
+    const code = $('code').value.trim().toUpperCase();
+    if (code.length !== 4) { $('msg').textContent = 'Der Code hat 4 Zeichen.'; return; }
+    motionOn = await askMotion();
+    if (!motionOn) { $('msg').textContent = 'Ohne Bewegungsdaten geht nur das Steuerkreuz. Safari: aA-Menü > Website-Einstellungen prüfen.'; }
+    connect(code);
+  });
+
+  // ---------- Bewegung: Drehrate des Gyroskops wird zu Cursor-Schritten ----------
+  let ax = 0, ay = 0, lastT = 0, up = [0, 0, 1];
+  addEventListener('deviceorientation', e => {
+    if (e.beta == null) return;
+    const b = e.beta * Math.PI / 180, g = (e.gamma || 0) * Math.PI / 180;
+    up = [-Math.cos(b) * Math.sin(g), Math.sin(b), Math.cos(b) * Math.cos(g)];
+  });
+  addEventListener('devicemotion', e => {
+    const r = e.rotationRate; if (!r || r.alpha == null) return;
+    const now = performance.now(), dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016; lastT = now;
+    const w = [r.beta || 0, r.gamma || 0, r.alpha || 0];                       // Drehrate um x, y, z in Grad/s
+    let yaw = w[0] * up[0] + w[1] * up[1] + w[2] * up[2];                     // Drehung um die Senkrechte
+    let pitch = w[0];                                                         // Kippen um die Querachse
+    if (Math.abs(yaw) < opt.dz) yaw = 0; if (Math.abs(pitch) < opt.dz) pitch = 0;
+    let x = -yaw * dt, y = -pitch * dt;
+    if (opt.sw) [x, y] = [y, x];
+    if (opt.ix) x = -x; if (opt.iy) y = -y;
+    ax += x; ay += y;
+  });
+  setInterval(() => { if ((ax || ay) && conn) { send({ t: 'm', x: +ax.toFixed(3), y: +ay.toFixed(3) }); } ax = ay = 0; }, 16);
+
+  // ---------- Tasten ----------
+  document.querySelectorAll('[data-b]').forEach(b => {
+    const name = b.dataset.b;
+    const down = e => { e.preventDefault(); b.classList.add('down'); send({ t: 'b', b: name, d: 1 }); };
+    const upH = e => { e.preventDefault(); if (!b.classList.contains('down')) return; b.classList.remove('down'); send({ t: 'b', b: name, d: 0 }); };
+    b.addEventListener('pointerdown', down); b.addEventListener('pointerup', upH); b.addEventListener('pointercancel', upH); b.addEventListener('pointerleave', upH);
+  });
+  $('center').addEventListener('click', () => send({ t: 'c' }));
+
+  // ---------- Optionen ----------
+  $('o-ix').checked = opt.ix; $('o-iy').checked = opt.iy; $('o-sw').checked = opt.sw; $('o-dz').value = opt.dz;
+  ['ix', 'iy', 'sw'].forEach(k => $('o-' + k).addEventListener('change', e => { opt[k] = e.target.checked; saveOpt(); }));
+  $('o-dz').addEventListener('input', e => { opt.dz = +e.target.value; saveOpt(); });
+  $('opt').addEventListener('click', () => $('sheet').classList.add('on'));
+  $('o-close').addEventListener('click', () => $('sheet').classList.remove('on'));
+  $('o-re').addEventListener('click', () => { $('sheet').classList.remove('on'); $('over').classList.remove('hide'); });
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('touchmove', e => { if (!e.target.closest('.sheet')) e.preventDefault(); }, { passive: false });
+}
+</script>
+</body>
+</html>
