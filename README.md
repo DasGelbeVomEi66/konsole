@@ -1,5 +1,9 @@
 # Konsole mit Handy-Fernbedienung
 
+**Konsole starten: https://dasgelbevomei66.github.io/konsole/**
+
+Fernbedienung direkt (iPhone, Safari): https://dasgelbevomei66.github.io/konsole/remote.html
+
 Kanal-Menü im Stil einer Wohnzimmer-Konsole, ein Obstschneide-Spiel und eine Handy-Fernbedienung, alles im Browser.
 
 - `index.html` öffnest du am Laptop (Edge oder Chrome).
