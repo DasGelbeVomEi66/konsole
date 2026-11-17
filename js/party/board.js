@@ -29,13 +29,13 @@ const SPACE = {
 // ---------- Inselform und Gelände ----------
 const BAY = 1.57;
 const PEN = BAY + Math.PI * 0.62;
-function islandR(th) { const d = wrapA(th - BAY), dp = wrapA(th - PEN); return 96 + 7 * Math.sin(3 * th + 0.5) + 5 * Math.cos(5 * th) - 34 * Math.exp(-(((d / 0.3)) ** 2)) + 18 * Math.exp(-(((dp / 0.16)) ** 2)); }
+function islandR(th) { const d = wrapA(th - BAY), dp = wrapA(th - PEN); return 96 + 7 * Math.sin(3 * th + 0.5) + 5 * Math.cos(5 * th) - 28 * Math.exp(-(((d / 0.3)) ** 2)) + 18 * Math.exp(-(((dp / 0.16)) ** 2)); }
 function noise2(x, z) { return Math.sin(x * 0.21 + Math.cos(z * 0.17) * 2) * 0.5 + Math.sin(z * 0.23 + x * 0.05) * 0.5; }
 function heightAt(x, z) {
   const d = Math.hypot(x, z), th = Math.atan2(z, x), R = islandR(th), t = d - R;
   if (t > 0) return 0.25 - Math.min(t, 18) * 0.3;
   let h = t > -11 ? 0.25 + (-t) / 11 * 0.9 : 1.15 + clamp((-t - 11) / 8, 0, 1) * (0.35 + noise2(x, z) * 0.3);
-  h += 18 * Math.exp(-(((d / 21)) ** 2)) - 4.5 * Math.exp(-(((d / 4.5)) ** 2));
+  h += 27 * Math.exp(-(((d / 30)) ** 2)) - 6 * Math.exp(-(((d / 5.5)) ** 2));
   return h;
 }
 
@@ -114,97 +114,137 @@ function buildWorld(scene) {
 
 // ---------- Spielbrett-Graph ----------
 function buildBoard(scene, W) {
-  const nodes = [];
-  const pathR = th => islandR(th) - 9;
-  // Hauptschleife entlang der Küste
-  const samples = []; for (let i = 0; i <= 3000; i++) { const th = i / 3000 * TAU, r = pathR(th); samples.push([Math.cos(th) * r, Math.sin(th) * r, th]); }
-  let L = 0; const acc = [0]; for (let i = 1; i < samples.length; i++) { L += Math.hypot(samples[i][0] - samples[i - 1][0], samples[i][1] - samples[i - 1][1]); acc.push(L); }
-  const M = 84;
-  for (let k = 0; k < M; k++) { const target = k / M * L; let i = acc.findIndex(a => a >= target); if (i < 0) i = 0; const s2 = samples[i]; nodes.push({ id: k, x: s2[0], z: s2[1], th: s2[2], next: [(k + 1) % M], prev: [], type: 'blue', main: true }); }
-  const nearestMain = th => { let b = 0, bd = 9; for (let i = 0; i < M; i++) { const d = Math.abs(wrapA(nodes[i].th - th)); if (d < bd) { bd = d; b = i; } } return b; };
-  const ends = [];
-  const branch = (from, to, ctrl, types0, kind) => {
-    const A = nodes[from], B = nodes[to], ids = [];
-    // Länge der Strecke schätzen und Feldzahl daran anpassen (Abstand etwa 7)
-    let len = 0, px = A.x, pz = A.z;
-    for (let k = 1; k <= 40; k++) { const t = k / 40; const x = ctrl ? (1 - t) ** 2 * A.x + 2 * (1 - t) * t * ctrl[0] + t * t * B.x : lerp(A.x, B.x, t), z = ctrl ? (1 - t) ** 2 * A.z + 2 * (1 - t) * t * ctrl[1] + t * t * B.z : lerp(A.z, B.z, t); len += Math.hypot(x - px, z - pz); px = x; pz = z; }
-    const n = Math.max(2, Math.round(len / 7) - 1), types = [];
-    for (let i = 0; i < n; i++) types.push(types0[Math.floor(i * types0.length / n)] || 'blue');
-    for (let i = 1; i <= n; i++) {
-      const t = i / (n + 1); let x, z;
-      if (ctrl) { x = (1 - t) ** 2 * A.x + 2 * (1 - t) * t * ctrl[0] + t * t * B.x; z = (1 - t) ** 2 * A.z + 2 * (1 - t) * t * ctrl[1] + t * t * B.z; }
-      else { x = lerp(A.x, B.x, t); z = lerp(A.z, B.z, t); }
-      if (nodes.some(m => m.main && m !== A && m !== B && Math.hypot(m.x - x, m.z - z) < 4.6)) continue; // zu nah am Hauptweg
-      const id = nodes.length; nodes.push({ id, x, z, next: [], prev: [], type: types[i - 1], kind }); ids.push(id);
-    }
-    A.next.push(ids[0]); ids.forEach((id, i) => nodes[id].next.push(i < ids.length - 1 ? ids[i + 1] : to));
-    ends.push(from, to);
-    return ids;
-  };
+  const nodes = [], SP = 5.6, junctions = {};
   const polar = (th, r) => [Math.cos(th) * r, Math.sin(th) * r];
-  const junctions = {};
-  // 1 Holzsteg quer über die Bucht (kurz, gefährlich)
-  const a1 = nearestMain(BAY - 0.55), b1 = nearestMain(BAY + 0.55);
-  branch(a1, b1, polar(BAY, islandR(BAY - 0.62) + 4), ['red', 'event', 'blue', 'bad', 'blue', 'red'], 'bridge'); junctions[a1] = ['Am Strand entlang', 'Holzsteg (kurz, gefährlich)'];
-  // 2 Bootssteg hinaus aufs Meer und zurück (Umweg mit Glück)
-  const t2 = BAY + Math.PI * 0.3, a2 = nearestMain(t2 - 0.13), b2 = nearestMain(t2 + 0.13);
-  branch(a2, b2, polar(t2, islandR(t2) + 34), ['blue', 'lucky', 'event', 'lucky', 'blue'], 'bridge'); junctions[a2] = ['Am Strand entlang', 'Bootssteg (Umweg, viel Glück)'];
-  // 3 Halbinsel-Pfad über den Leuchtturm-Zipfel
-  const a3 = nearestMain(PEN - 0.2), b3 = nearestMain(PEN + 0.2);
-  // (Hauptweg führt schon um die Halbinsel, Abkürzung quer durch)
-  branch(a3, b3, polar(PEN, pathR(PEN) - 30), ['blue', 'duel', 'red', 'blue'], 'land'); junctions[a3] = ['Um die Halbinsel', 'Abkürzung durch die Dünen'];
-  // 4 Dschungelpfad ins Innere
-  const JT = BAY + Math.PI, a4 = nearestMain(JT - 0.42), b4 = nearestMain(JT + 0.42);
-  const jungleIds = branch(a4, b4, polar(JT, 44), ['event', 'blue', 'shop', 'lucky', 'event', 'blue', 'duel', 'blue'], 'land'); junctions[a4] = ['Am Strand entlang', 'Dschungelpfad'];
-  // 5 Vulkanpfad: steil hinauf, riskant, aber nah an der Mitte
-  const VT = BAY - Math.PI * 0.52, a5 = nearestMain(VT - 0.36), b5 = nearestMain(VT + 0.36);
-  const volcIds = branch(a5, b5, polar(VT, 20), ['red', 'event', 'bad', 'blue', 'red', 'event', 'blue'], 'land'); junctions[a5] = ['Am Strand entlang', 'Vulkanpfad (riskant)'];
-  // 6 Querweg vom Dschungel zum Vulkanpfad (zweite Abzweigung im Inneren)
-  const jx = jungleIds[Math.floor(jungleIds.length / 2)], vx = volcIds[Math.floor(volcIds.length / 2)];
-  const crossIds = branch(jx, vx, [(nodes[jx].x + nodes[vx].x) * 0.15, (nodes[jx].z + nodes[vx].z) * 0.15 + 18], ['blue', 'event', 'lucky', 'blue', 'red'], 'land'); junctions[jx] = ['Dschungelpfad weiter', 'Querweg zum Vulkan'];
-  void crossIds;
+  const pathR = th => islandR(th) - 9;
+  const add = (x, z, kind, type = 'blue') => { const id = nodes.length; nodes.push({ id, x, z, next: [], prev: [], type, kind }); return id; };
+  // gleichmäßig verteilte Punkte entlang einer Kurve f(t), t in [0,1]
+  function spaced(f, closed) {
+    const S = []; let L = 0, prev = f(0); S.push([prev, 0]);
+    for (let i = 1; i <= 2000; i++) { const p = f(i / 2000); L += Math.hypot(p[0] - prev[0], p[1] - prev[1]); S.push([p, L]); prev = p; }
+    const n = Math.max(1, Math.round(L / SP)), out = [];
+    const cnt = closed ? n : n - 1;
+    for (let k = closed ? 0 : 1; k <= cnt; k++) { const target = k / n * L; let j = S.findIndex(e => e[1] >= target); if (j < 0) j = S.length - 1; out.push(S[j][0]); }
+    return out;
+  }
+  const tooClose = (x, z, except) => nodes.some(m => !except.includes(m.id) && Math.hypot(m.x - x, m.z - z) < 4.4);
+  function chain(from, to, f, kind, types) {
+    const pts = spaced(f, false).filter(([x, z]) => !tooClose(x, z, [from, to]));
+    const ids = pts.map(([x, z], i) => add(x, z, kind, types[Math.floor(i * types.length / pts.length)] || 'blue'));
+    const seq = [from].concat(ids, to == null ? [] : [to]);
+    for (let i = 0; i < seq.length - 1; i++) nodes[seq[i]].next.push(seq[i + 1]);
+    return ids;
+  }
+  const quad = (A, C, B) => t => [(1 - t) ** 2 * A[0] + 2 * (1 - t) * t * C[0] + t * t * B[0], (1 - t) ** 2 * A[1] + 2 * (1 - t) * t * C[1] + t * t * B[1]];
+  const line = (A, B) => t => [lerp(A[0], B[0], t), lerp(A[1], B[1], t)];
+  const P = id => [nodes[id].x, nodes[id].z];
+  // 1) Küstenring
+  const coast = spaced(t => polar(t * TAU, pathR(t * TAU)), true).map(([x, z]) => add(x, z, 'land'));
+  coast.forEach((id, i) => nodes[id].next.push(coast[(i + 1) % coast.length]));
+  coast.forEach(id => nodes[id].th = Math.atan2(nodes[id].z, nodes[id].x));
+  const nearOn = (ids, th) => ids.reduce((b, id) => Math.abs(wrapA(nodes[id].th - th)) < Math.abs(wrapA(nodes[b].th - th)) ? id : b, ids[0]);
+  // 2) Innerer Ring um den Vulkanfuß
+  const RI = 47;
+  const inner = spaced(t => polar(t * TAU, RI + Math.sin(t * TAU * 3) * 3), true).map(([x, z]) => add(x, z, 'land'));
+  inner.forEach((id, i) => { nodes[id].next.push(inner[(i + 1) % inner.length]); nodes[id].th = Math.atan2(nodes[id].z, nodes[id].x); });
+  const A = k => BAY + k * Math.PI;
+  // 3) Holzsteg über die Bucht
+  { const a = nearOn(coast, A(-0.17)), b = nearOn(coast, A(0.17)); chain(a, b, quad(P(a), polar(BAY, islandR(BAY - 0.55) + 4), P(b)), 'bridge', ['red', 'event', 'blue', 'bad', 'blue', 'red']); junctions[a] = ['Am Strand entlang', 'Holzsteg (kurz, gefährlich)']; }
+  // 4) Bootssteg aufs Meer
+  { const t2 = A(0.3), a = nearOn(coast, t2 - 0.13), b = nearOn(coast, t2 + 0.13); chain(a, b, quad(P(a), polar(t2, islandR(t2) + 34), P(b)), 'bridge', ['blue', 'lucky', 'event', 'lucky', 'blue']); junctions[a] = ['Am Strand entlang', 'Bootssteg (Umweg, viel Glück)']; }
+  // 5) Dünen-Abkürzung über die Halbinsel
+  { const a = nearOn(coast, PEN - 0.2), b = nearOn(coast, PEN + 0.2); chain(a, b, quad(P(a), polar(PEN, pathR(PEN) - 30), P(b)), 'land', ['blue', 'duel', 'red', 'blue']); junctions[a] = ['Um die Halbinsel', 'Abkürzung durch die Dünen']; }
+  // 6) Dschungelpfad: Küste -> innerer Ring
+  { const th = A(1.0), a = nearOn(coast, th), b = nearOn(inner, th + 0.12); chain(a, b, quad(P(a), polar(th + 0.05, 68), P(b)), 'land', ['event', 'blue', 'shop', 'lucky', 'blue']); junctions[a] = ['Am Strand entlang', 'Dschungelpfad ins Innere']; }
+  // 7) Baumwipfelpfad auf Stelzen: Küste -> innerer Ring
+  { const th = A(1.5), a = nearOn(coast, th), b = nearOn(inner, th + 0.15); chain(a, b, line(P(a), P(b)), 'canopy', ['blue', 'event', 'lucky', 'blue', 'duel']); junctions[a] = ['Am Strand entlang', 'Baumwipfelpfad'];
+    }
+  // 8) Ausgänge vom inneren Ring zurück zur Küste
+  { const th = A(1.8), a = nearOn(inner, th), b = nearOn(coast, th + 0.1); chain(a, b, line(P(a), P(b)), 'land', ['blue', 'red', 'event']); junctions[a] = ['Weiter im Ring', 'Zurück zur Küste']; }
+  { const th = A(0.85), a = nearOn(inner, th), b = nearOn(coast, th + 0.1); chain(a, b, line(P(a), P(b)), 'land', ['blue', 'shop', 'blue']); junctions[a] = ['Weiter im Ring', 'Zurück zur Küste']; }
+  // 9) Vulkanspirale hinauf zum Gipfel
+  let summit;
+  { const th0 = A(1.25), a = nearOn(inner, th0), turns = 2.15;
+    const f = t => { const th = th0 + t * turns * TAU, r = lerp(38, 9, t); return polar(th, r); };
+    const ids = chain(a, null, f, 'land', ['blue', 'red', 'event', 'blue', 'bad', 'lucky', 'red', 'blue', 'event', 'duel', 'red', 'blue', 'bad', 'event', 'lucky', 'blue']);
+    summit = ids[ids.length - 1]; nodes[summit].type = 'lucky'; nodes[summit].summit = true;
+    junctions[a] = ['Weiter im Ring', 'Hinauf auf den Vulkan'];
+    // Rutsche vom Gipfel zurück auf den inneren Ring
+    const land = nearOn(inner, A(0.45)); nodes[summit].next.push(land); nodes[summit].slideTo = land; }
   nodes.forEach(n => n.next.forEach(j => nodes[j].prev.push(n.id)));
-  // Feldtypen auf der Hauptschleife
-  const pattern = ['blue', 'blue', 'red', 'blue', 'event', 'blue', 'blue', 'lucky', 'blue', 'red', 'blue', 'event', 'blue', 'duel', 'blue', 'blue', 'red', 'event', 'blue', 'shop', 'blue', 'bad', 'blue', 'event'];
-  for (let k = 1; k < M; k++) nodes[k].type = pattern[(k * 7) % pattern.length];
-  nodes[0].type = 'start'; nodes[3].type = 'shop'; nodes[Math.floor(M / 2)].type = 'shop';
-  ends.forEach(i => { if (nodes[i].main) nodes[i].type = 'blue'; });
-  nodes.forEach(n => { n.y = n.kind === 'bridge' ? 0.9 : heightAt(n.x, n.z) + 0.05; });
-  // Stern-Plätze, verteilt über Hauptweg und Abzweige
-  const cand = [0.08, 0.2, 0.33, 0.45, 0.58, 0.7, 0.82, 0.93].map(f => Math.floor(M * f)).concat([jungleIds[jungleIds.length - 2], volcIds[1], volcIds[volcIds.length - 2]]);
-  const tro = cand.filter(i => nodes[i] && !ends.includes(i) && nodes[i].kind !== 'bridge');
-  tro.forEach(i => { nodes[i].type = 'blue'; nodes[i].trophySpot = true; });
+  // Feldtypen auf den Ringen
+  const pc = ['blue', 'blue', 'red', 'blue', 'event', 'blue', 'blue', 'lucky', 'blue', 'red', 'blue', 'event', 'blue', 'duel', 'blue', 'blue', 'red', 'event', 'blue', 'shop', 'blue', 'bad', 'blue', 'event'];
+  coast.forEach((id, k) => { if (k) nodes[id].type = pc[(k * 7) % pc.length]; });
+  const pi2 = ['blue', 'event', 'blue', 'red', 'lucky', 'blue', 'duel', 'blue', 'event', 'bad', 'blue', 'shop', 'blue', 'red', 'event'];
+  inner.forEach((id, k) => nodes[id].type = pi2[(k * 5) % pi2.length]);
+  nodes[coast[0]].type = 'start'; nodes[coast[3]].type = 'shop'; nodes[coast[Math.floor(coast.length / 2)]].type = 'shop';
+  Object.keys(junctions).forEach(id => { if (nodes[id].type !== 'start') nodes[id].type = 'blue'; });
+  nodes.forEach(n => { if (n.next.length > 1) n.type = n.type === 'start' ? 'start' : 'blue'; });
+  // Höhen
+  nodes.forEach(n => {
+    const g = heightAt(n.x, n.z);
+    n.ground = g;
+    n.y = n.kind === 'bridge' ? 0.9 : n.kind === 'canopy' ? g + 7.5 : g + 0.05;
+  });
+  // Rampen: erste und letzte Plattform des Baumwipfelpfads etwas tiefer
+  nodes.filter(n => n.kind === 'canopy').forEach(n => { const pIn = nodes[n.prev[0]], nOut = nodes[n.next[0]]; if (pIn.kind !== 'canopy' || nOut.kind !== 'canopy') n.y = n.ground + 4; });
+  // Stern-Plätze
+  const tro = [];
+  coast.forEach((id, k) => { if (k % 14 === 7 && nodes[id].next.length === 1) tro.push(id); });
+  inner.forEach((id, k) => { if (k % 13 === 4 && nodes[id].next.length === 1) tro.push(id); });
+  tro.push(summit);
+  tro.forEach(i => { if (!nodes[i].summit) nodes[i].type = 'blue'; nodes[i].trophySpot = true; });
 
-  // Felder
-  const discGeo = new THREE.CylinderGeometry(1.55, 1.7, 0.4, 28), topGeo = new THREE.CircleGeometry(1.4, 28);
-  const texCache = {};
+  // ---------- Darstellung ----------
+  const discGeo = new THREE.CylinderGeometry(1.55, 1.7, 0.4, 28), topGeo = new THREE.CircleGeometry(1.4, 28), texCache = {};
   nodes.forEach(n => {
     const g = new THREE.Group(); g.position.set(n.x, n.y, n.z);
     const S = SPACE[n.type];
     const body = new THREE.Mesh(discGeo, toon(new THREE.Color(S.col).multiplyScalar(0.75))); body.position.y = 0.15; body.castShadow = true; body.receiveShadow = true; g.add(body);
     texCache[n.type] = texCache[n.type] || iconTex(n.type);
     const top = new THREE.Mesh(topGeo, new THREE.MeshBasicMaterial({ map: texCache[n.type] })); top.rotation.x = -Math.PI / 2; top.position.y = 0.36; g.add(top);
-    n.mesh = g; n.top = top; scene.add(g);
+    n.mesh = g; scene.add(g);
   });
-  // Verbindungen: Trittsteine an Land, Holzplanken über Wasser
-  const stones = [];
-  const plankM = toon('#b07a45'), plank2 = toon('#c48a52'), postM = toon('#7a4f2a');
+  const stones = [], plankM = toon('#b07a45'), plank2 = toon('#c48a52'), postM = toon('#7a4f2a');
+  const v = new THREE.Vector3();
   nodes.forEach(n => n.next.forEach(j => {
-    const m = nodes[j], dx = m.x - n.x, dz = m.z - n.z, d = Math.hypot(dx, dz), ang = Math.atan2(dx, dz);
-    if (n.kind === 'bridge' || m.kind === 'bridge') {
-      const seg = new THREE.Group(); seg.position.set((n.x + m.x) / 2, 0, (n.z + m.z) / 2); seg.rotation.y = ang; scene.add(seg);
+    const m = nodes[j];
+    if (n.slideTo === j) return;
+    const raised = k => k.kind === 'bridge' || k.kind === 'canopy';
+    if (raised(n) || raised(m)) {
+      const a = new THREE.Vector3(n.x, n.y - 0.28, n.z), b = new THREE.Vector3(m.x, m.y - 0.28, m.z), d = a.distanceTo(b);
+      const seg = new THREE.Group(); seg.position.copy(a).lerp(b, 0.5); seg.lookAt(b); scene.add(seg);
       const np = Math.max(2, Math.round(d / 1.1));
-      for (let i = 0; i < np; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(4, 0.22, 0.95), i % 2 ? plankM : plank2); p.position.set(0, 0.62, -d / 2 + (i + 0.5) * d / np); p.castShadow = p.receiveShadow = true; seg.add(p); }
-      for (const sd of [-1, 1]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 3.4, 8), postM); post.position.set(sd * 2.1, 0.2, -d / 2); post.castShadow = true; seg.add(post); const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, d), postM); rail.position.set(sd * 2.1, 1.85, 0); seg.add(rail); }
+      for (let i = 0; i < np; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.2, 0.95), i % 2 ? plankM : plank2); p.position.set(0, 0, -d / 2 + (i + 0.5) * d / np); p.castShadow = p.receiveShadow = true; seg.add(p); }
+      for (const sd of [-1, 1]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, d), postM); rail.position.set(sd * 1.95, 1.2, 0); seg.add(rail); }
+      // senkrechte Pfosten bis zum Boden
+      for (const t of [0.1, 0.9]) for (const sd of [-1, 1]) {
+        v.copy(a).lerp(b, t); const side = new THREE.Vector3(1, 0, 0).applyQuaternion(seg.quaternion).multiplyScalar(sd * 1.9); v.add(side);
+        const gy = Math.max(-5, heightAt(v.x, v.z)), h = v.y + 1.3 - gy;
+        if (h < 0.3) continue;
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, h, 8), postM); post.position.set(v.x, gy + h / 2, v.z); post.castShadow = true; scene.add(post);
+      }
       return;
     }
-    const steps = Math.max(1, Math.round(d / 1.6) - 2);
+    const dx = m.x - n.x, dz = m.z - n.z, d = Math.hypot(dx, dz), steps = Math.max(1, Math.round(d / 1.6) - 2), ang = Math.atan2(dx, dz);
     for (let s2 = 1; s2 <= steps; s2++) { const t = s2 / (steps + 1); stones.push([n.x + dx * t, n.z + dz * t, ang]); }
   }));
   W.inst(new THREE.CylinderGeometry(0.45, 0.5, 0.18, 10), toon('#fff3d6'), stones, (o, i, p) => { o.position.y += 0.06; o.rotation.y = p[2]; o.scale.set(1, 1, 0.8); }, false);
-  // Wegweiser an Abzweigungen
+  // Plattform-Stützen unter den Baumwipfel-Feldern
+  nodes.filter(n => n.kind === 'canopy').forEach(n => { const h = n.y - n.ground; const t = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, h, 10), toon('#8a5a30')); t.position.set(n.x, n.ground + h / 2, n.z); t.castShadow = true; outline(t, 1.04); scene.add(t); const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(2.2, 1), toon('#3f9e3f')); leaf.position.set(n.x + 2.4, n.y + 2.2, n.z - 1.2); leaf.castShadow = true; scene.add(leaf); });
+  // Rutsche vom Gipfel
+  { const s0 = nodes[summit], s1 = nodes[s0.slideTo];
+    const c = new THREE.QuadraticBezierCurve3(new THREE.Vector3(s0.x, s0.y + 0.6, s0.z), new THREE.Vector3((s0.x + s1.x) / 2, s0.y + 4, (s0.z + s1.z) / 2), new THREE.Vector3(s1.x, s1.y + 0.6, s1.z));
+    s0.slideCurve = c;
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 1.1, 12, false), toon('#ff8a3d', { side: THREE.DoubleSide, transparent: true, opacity: 0.9 })); tube.castShadow = true; scene.add(tube);
+    const stripe = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 1.14, 12, false), new THREE.MeshBasicMaterial({ color: '#ffe14d', wireframe: true, transparent: true, opacity: 0.35 })); scene.add(stripe);
+    for (let i = 1; i < 6; i++) { const p = c.getPoint(i / 6), gy = heightAt(p.x, p.z), h = p.y - gy; if (h < 1) continue; const post = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, h, 8), toon('#c9c3b8')); post.position.set(p.x, gy + h / 2, p.z); scene.add(post); }
+  }
+  // Lava im Krater
+  { const lava = new THREE.Mesh(new THREE.CircleGeometry(4.2, 24), new THREE.MeshBasicMaterial({ color: '#ff6a00' })); lava.rotation.x = -Math.PI / 2; lava.position.set(0, heightAt(0, 0) + 0.4, 0); scene.add(lava); W.anim.push(t => lava.material.color.setHSL(0.06 + Math.sin(t * 2) * 0.02, 1, 0.5)); }
+  // Wegweiser
   Object.keys(junctions).forEach(id => { const n = nodes[id]; const g = new THREE.Group(); g.position.set(n.x + 2.2, n.y, n.z + 0.5); const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.6, 6), postM); pole.position.y = 1.3; g.add(pole); for (let k = 0; k < 2; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 0.1), toon(k ? '#e8c48a' : '#d9a95f')); b.position.set(k ? -0.5 : 0.5, 2.1 - k * 0.5, 0); b.rotation.y = k ? 0.4 : -0.4; outline(b, 1.06); g.add(b); } scene.add(g); });
-  return { nodes, M, trophySpots: tro, junctions };
+  return { nodes, M: coast.length, trophySpots: tro, junctions };
 }
 
 function decorate(scene, W, B) {
@@ -571,6 +611,12 @@ function open(box, K) {
 
   // ---------- Bewegung ----------
   async function hop(pl, to) {
+    const from = board.nodes[pl.node];
+    if (from.slideTo === to && from.slideCurve) {
+      pl.moving = true; pl.anim = 'happy'; Sound.play('whoosh'); let t = 0, last = performance.now();
+      await new Promise(res => { const iv = setInterval(() => { const now = performance.now(), d = now - last; last = now; if (!alive) { clearInterval(iv); res(); return; } if (paused) return; t += Math.min(100, d) / 1800; const k = Math.min(1, t); const p = from.slideCurve.getPoint(k), q = from.slideCurve.getPoint(Math.min(1, k + 0.01)); pl.cre.root.position.copy(p); pl.face = Math.atan2(q.x - p.x, q.z - p.z); camTarget.copy(p); if (k >= 1) { clearInterval(iv); res(); } }, 16); });
+      pl.node = to; pl.moving = false; pl.anim = 'idle'; Sound.play('splash'); return;
+    }
     const a = pl.cre.root.position.clone(), n = board.nodes[to], b = new THREE.Vector3(n.x, n.y + 0.4, n.z);
     pl.moving = true; pl.face = Math.atan2(b.x - a.x, b.z - a.z); pl.anim = 'walk';
     const dur = 300; let t = 0, last = performance.now();
