@@ -1,4 +1,4 @@
-// Insel-Party: Brettspiel für 1 bis 4 Spieler (Rest Computer). Würfeln durch Schütteln, Münzen, Trophäen, Minispiele.
+// Insel-Party: Brettspiel für 1 bis 4 Spieler (Rest Computer). Würfeln durch Schütteln, Münzen, Sterne, Minispiele.
 import * as THREE from '../../lib/three.module.min.js';
 import { CREATURES, makeCreature, creaturePortraits, toon, outline } from './creatures.js';
 import { GAMES, runMinigame } from './minigames.js';
@@ -16,7 +16,7 @@ const ITEMS = {
   double: { name: 'Doppelwürfel', price: 10, desc: 'Zwei Würfel auf einmal' },
   triple: { name: 'Dreifachwürfel', price: 15, desc: 'Drei Würfel auf einmal' },
   steal: { name: 'Klauhand', price: 15, desc: 'Stibitzt einem Mitspieler Münzen' },
-  compass: { name: 'Kompassmuschel', price: 20, desc: 'Bringt dich direkt vor die Trophäe' },
+  compass: { name: 'Kompassmuschel', price: 20, desc: 'Bringt dich direkt vor den Stern' },
   swap: { name: 'Tauschmuschel', price: 10, desc: 'Tauscht den Platz mit einem Mitspieler' },
   trap: { name: 'Fallennetz', price: 10, desc: 'Wer hier landet, zahlt dir 10 Münzen' },
 };
@@ -28,13 +28,14 @@ const SPACE = {
 
 // ---------- Inselform und Gelände ----------
 const BAY = 1.57;
-function islandR(th) { const d = wrapA(th - BAY); return 60 + 5 * Math.sin(3 * th + 0.5) + 3.5 * Math.cos(5 * th) - 26 * Math.exp(-(((d / 0.36)) ** 2)); }
+const PEN = BAY + Math.PI * 0.62;
+function islandR(th) { const d = wrapA(th - BAY), dp = wrapA(th - PEN); return 96 + 7 * Math.sin(3 * th + 0.5) + 5 * Math.cos(5 * th) - 34 * Math.exp(-(((d / 0.3)) ** 2)) + 18 * Math.exp(-(((dp / 0.16)) ** 2)); }
 function noise2(x, z) { return Math.sin(x * 0.21 + Math.cos(z * 0.17) * 2) * 0.5 + Math.sin(z * 0.23 + x * 0.05) * 0.5; }
 function heightAt(x, z) {
   const d = Math.hypot(x, z), th = Math.atan2(z, x), R = islandR(th), t = d - R;
-  if (t > 0) return 0.25 - Math.min(t, 16) * 0.32;
+  if (t > 0) return 0.25 - Math.min(t, 18) * 0.3;
   let h = t > -11 ? 0.25 + (-t) / 11 * 0.9 : 1.15 + clamp((-t - 11) / 8, 0, 1) * (0.35 + noise2(x, z) * 0.3);
-  h += 13 * Math.exp(-(((d / 15)) ** 2)) - 3.5 * Math.exp(-(((d / 3.6)) ** 2));
+  h += 18 * Math.exp(-(((d / 21)) ** 2)) - 4.5 * Math.exp(-(((d / 4.5)) ** 2));
   return h;
 }
 
@@ -64,15 +65,15 @@ function buildWorld(scene) {
     vertexShader: 'varying vec3 vp; void main(){ vp = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
     fragmentShader: 'varying vec3 vp; void main(){ float h = clamp(vp.y*1.4,0.,1.); vec3 c = mix(vec3(1.,.9,.74), vec3(.28,.62,.98), pow(h,.6)); gl_FragColor = vec4(c,1.); }' });
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(800, 32, 16), skyMat));
-  const sun = new THREE.Mesh(new THREE.CircleGeometry(40, 32), new THREE.MeshBasicMaterial({ color: '#fff4c2', fog: false })); sun.position.set(-300, 260, -560); sun.lookAt(0, 0, 0); scene.add(sun);
-  scene.fog = new THREE.Fog('#bfe3ff', 160, 700);
+  const sun = new THREE.Mesh(new THREE.CircleGeometry(45, 32), new THREE.MeshBasicMaterial({ color: '#fff4c2', fog: false })); sun.position.set(-300, 260, -560); sun.lookAt(0, 0, 0); scene.add(sun);
+  scene.fog = new THREE.Fog('#bfe3ff', 240, 950);
   // Licht
   scene.add(new THREE.HemisphereLight('#fff6e0', '#4c8a6a', 1.25));
-  const dl = new THREE.DirectionalLight('#fff1d6', 2.0); dl.position.set(-60, 110, 50); dl.castShadow = true;
-  dl.shadow.mapSize.set(2048, 2048); Object.assign(dl.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 300 }); dl.shadow.bias = -0.0008; dl.shadow.normalBias = 0.05;
+  const dl = new THREE.DirectionalLight('#fff1d6', 2.0); dl.position.set(-90, 160, 75); dl.castShadow = true;
+  dl.shadow.mapSize.set(2048, 2048); Object.assign(dl.shadow.camera, { left: -135, right: 135, top: 135, bottom: -135, near: 10, far: 420 }); dl.shadow.mapSize.set(4096, 4096); dl.shadow.bias = -0.0008; dl.shadow.normalBias = 0.05;
   scene.add(dl);
   // Gelände
-  const RINGS = 70, SEG = 160, pos = [], col = [], idx = [];
+  const RINGS = 95, SEG = 220, pos = [], col = [], idx = [];
   const cGrass = new THREE.Color('#6fc24f'), cGrass2 = new THREE.Color('#4ea93e'), cSand = new THREE.Color('#f6dfa6'), cWet = new THREE.Color('#d9bf86'), cDeep = new THREE.Color('#7fd7d0'), cRock = new THREE.Color('#8a7d6e');
   for (let r = 0; r <= RINGS; r++) for (let s = 0; s < SEG; s++) {
     const th = s / SEG * TAU, R = islandR(th), rr = (r / RINGS) ** 1.25 * (R + 18);
@@ -92,7 +93,7 @@ function buildWorld(scene) {
   // Meeresgrund
   const floor = new THREE.Mesh(new THREE.CircleGeometry(900, 48), new THREE.MeshLambertMaterial({ color: '#3fb7c8' })); floor.rotation.x = -Math.PI / 2; floor.position.y = -5; scene.add(floor);
   // Wasser mit Wellen
-  const wg = new THREE.PlaneGeometry(700, 700, 110, 110); wg.rotateX(-Math.PI / 2);
+  const wg = new THREE.PlaneGeometry(1000, 1000, 120, 120); wg.rotateX(-Math.PI / 2);
   const water = new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ color: '#29b6d8', transparent: true, opacity: 0.78, shininess: 90, specular: '#e8fbff' }));
   water.position.y = 0.05; scene.add(water);
   const wpos = wg.attributes.position, base = Float32Array.from(wpos.array);
@@ -101,8 +102,8 @@ function buildWorld(scene) {
     wpos.needsUpdate = true; wg.computeVertexNormals();
   });
   // Schaumring an der Küste
-  const foamPts = []; for (let s = 0; s <= 200; s++) { const th = s / 200 * TAU, R = islandR(th) + 0.6; foamPts.push(new THREE.Vector3(Math.cos(th) * R, 0.2, Math.sin(th) * R)); }
-  const foam = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(foamPts, true), 300, 0.35, 5, true), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.75 }));
+  const foamPts = []; for (let s = 0; s <= 320; s++) { const th = s / 320 * TAU, R = islandR(th) + 0.6; foamPts.push(new THREE.Vector3(Math.cos(th) * R, 0.2, Math.sin(th) * R)); }
+  const foam = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(foamPts, true), 480, 0.4, 5, true), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.75 }));
   scene.add(foam); W.anim.push(t => { foam.material.opacity = 0.5 + Math.sin(t * 1.6) * 0.25; foam.scale.setScalar(1 + Math.sin(t * 1.6) * 0.006); });
 
   // Deko-Helfer
@@ -114,43 +115,67 @@ function buildWorld(scene) {
 // ---------- Spielbrett-Graph ----------
 function buildBoard(scene, W) {
   const nodes = [];
-  const pathR = th => islandR(th) - 8.5;
-  // Hauptschleife
-  const samples = []; for (let i = 0; i <= 2000; i++) { const th = i / 2000 * TAU, r = pathR(th); samples.push([Math.cos(th) * r, Math.sin(th) * r, th]); }
+  const pathR = th => islandR(th) - 9;
+  // Hauptschleife entlang der Küste
+  const samples = []; for (let i = 0; i <= 3000; i++) { const th = i / 3000 * TAU, r = pathR(th); samples.push([Math.cos(th) * r, Math.sin(th) * r, th]); }
   let L = 0; const acc = [0]; for (let i = 1; i < samples.length; i++) { L += Math.hypot(samples[i][0] - samples[i - 1][0], samples[i][1] - samples[i - 1][1]); acc.push(L); }
-  const M = 46;
-  for (let k = 0; k < M; k++) { const target = k / M * L; let i = acc.findIndex(a => a >= target); if (i < 0) i = 0; const s = samples[i]; nodes.push({ id: k, x: s[0], z: s[1], th: s[2], next: [(k + 1) % M], prev: [], type: 'blue', main: true }); }
-  const nearestMain = th => { let b = 0, bd = 9; nodes.forEach((n, i) => { const d = Math.abs(wrapA(n.th - th)); if (d < bd) { bd = d; b = i; } }); return b; };
-  // Abzweig 1: Holzsteg über die Bucht (kurz, riskant)
-  const a1 = nearestMain(BAY - 0.62), b1 = nearestMain(BAY + 0.62);
-  const branch = (from, to, ctrl, types, kind) => {
-    const A = nodes[from], B = nodes[to], len = Math.hypot(B.x - A.x, B.z - A.z) * (ctrl ? 1.25 : 1), n = types.length, ids = [];
+  const M = 84;
+  for (let k = 0; k < M; k++) { const target = k / M * L; let i = acc.findIndex(a => a >= target); if (i < 0) i = 0; const s2 = samples[i]; nodes.push({ id: k, x: s2[0], z: s2[1], th: s2[2], next: [(k + 1) % M], prev: [], type: 'blue', main: true }); }
+  const nearestMain = th => { let b = 0, bd = 9; for (let i = 0; i < M; i++) { const d = Math.abs(wrapA(nodes[i].th - th)); if (d < bd) { bd = d; b = i; } } return b; };
+  const ends = [];
+  const branch = (from, to, ctrl, types0, kind) => {
+    const A = nodes[from], B = nodes[to], ids = [];
+    // Länge der Strecke schätzen und Feldzahl daran anpassen (Abstand etwa 7)
+    let len = 0, px = A.x, pz = A.z;
+    for (let k = 1; k <= 40; k++) { const t = k / 40; const x = ctrl ? (1 - t) ** 2 * A.x + 2 * (1 - t) * t * ctrl[0] + t * t * B.x : lerp(A.x, B.x, t), z = ctrl ? (1 - t) ** 2 * A.z + 2 * (1 - t) * t * ctrl[1] + t * t * B.z : lerp(A.z, B.z, t); len += Math.hypot(x - px, z - pz); px = x; pz = z; }
+    const n = Math.max(2, Math.round(len / 7) - 1), types = [];
+    for (let i = 0; i < n; i++) types.push(types0[Math.floor(i * types0.length / n)] || 'blue');
     for (let i = 1; i <= n; i++) {
       const t = i / (n + 1); let x, z;
       if (ctrl) { x = (1 - t) ** 2 * A.x + 2 * (1 - t) * t * ctrl[0] + t * t * B.x; z = (1 - t) ** 2 * A.z + 2 * (1 - t) * t * ctrl[1] + t * t * B.z; }
       else { x = lerp(A.x, B.x, t); z = lerp(A.z, B.z, t); }
+      if (nodes.some(m => m.main && m !== A && m !== B && Math.hypot(m.x - x, m.z - z) < 4.6)) continue; // zu nah am Hauptweg
       const id = nodes.length; nodes.push({ id, x, z, next: [], prev: [], type: types[i - 1], kind }); ids.push(id);
     }
-    void len;
     A.next.push(ids[0]); ids.forEach((id, i) => nodes[id].next.push(i < ids.length - 1 ? ids[i + 1] : to));
+    ends.push(from, to);
     return ids;
   };
-  const bridgeIds = branch(a1, b1, null, ['red', 'event', 'blue', 'bad', 'red'], 'bridge');
-  // Abzweig 2: Dschungelpfad ins Inselinnere
-  const JT = BAY + Math.PI, a2 = nearestMain(JT - 0.5), b2 = nearestMain(JT + 0.5);
-  const jc = [Math.cos(JT) * 26, Math.sin(JT) * 26];
-  const jungleIds = branch(a2, b2, jc, ['event', 'blue', 'shop', 'lucky', 'event', 'blue', 'duel'], 'jungle');
+  const polar = (th, r) => [Math.cos(th) * r, Math.sin(th) * r];
+  const junctions = {};
+  // 1 Holzsteg quer über die Bucht (kurz, gefährlich)
+  const a1 = nearestMain(BAY - 0.55), b1 = nearestMain(BAY + 0.55);
+  branch(a1, b1, polar(BAY, islandR(BAY - 0.62) + 4), ['red', 'event', 'blue', 'bad', 'blue', 'red'], 'bridge'); junctions[a1] = ['Am Strand entlang', 'Holzsteg (kurz, gefährlich)'];
+  // 2 Bootssteg hinaus aufs Meer und zurück (Umweg mit Glück)
+  const t2 = BAY + Math.PI * 0.3, a2 = nearestMain(t2 - 0.13), b2 = nearestMain(t2 + 0.13);
+  branch(a2, b2, polar(t2, islandR(t2) + 34), ['blue', 'lucky', 'event', 'lucky', 'blue'], 'bridge'); junctions[a2] = ['Am Strand entlang', 'Bootssteg (Umweg, viel Glück)'];
+  // 3 Halbinsel-Pfad über den Leuchtturm-Zipfel
+  const a3 = nearestMain(PEN - 0.2), b3 = nearestMain(PEN + 0.2);
+  // (Hauptweg führt schon um die Halbinsel, Abkürzung quer durch)
+  branch(a3, b3, polar(PEN, pathR(PEN) - 30), ['blue', 'duel', 'red', 'blue'], 'land'); junctions[a3] = ['Um die Halbinsel', 'Abkürzung durch die Dünen'];
+  // 4 Dschungelpfad ins Innere
+  const JT = BAY + Math.PI, a4 = nearestMain(JT - 0.42), b4 = nearestMain(JT + 0.42);
+  const jungleIds = branch(a4, b4, polar(JT, 44), ['event', 'blue', 'shop', 'lucky', 'event', 'blue', 'duel', 'blue'], 'land'); junctions[a4] = ['Am Strand entlang', 'Dschungelpfad'];
+  // 5 Vulkanpfad: steil hinauf, riskant, aber nah an der Mitte
+  const VT = BAY - Math.PI * 0.52, a5 = nearestMain(VT - 0.36), b5 = nearestMain(VT + 0.36);
+  const volcIds = branch(a5, b5, polar(VT, 20), ['red', 'event', 'bad', 'blue', 'red', 'event', 'blue'], 'land'); junctions[a5] = ['Am Strand entlang', 'Vulkanpfad (riskant)'];
+  // 6 Querweg vom Dschungel zum Vulkanpfad (zweite Abzweigung im Inneren)
+  const jx = jungleIds[Math.floor(jungleIds.length / 2)], vx = volcIds[Math.floor(volcIds.length / 2)];
+  const crossIds = branch(jx, vx, [(nodes[jx].x + nodes[vx].x) * 0.15, (nodes[jx].z + nodes[vx].z) * 0.15 + 18], ['blue', 'event', 'lucky', 'blue', 'red'], 'land'); junctions[jx] = ['Dschungelpfad weiter', 'Querweg zum Vulkan'];
+  void crossIds;
   nodes.forEach(n => n.next.forEach(j => nodes[j].prev.push(n.id)));
   // Feldtypen auf der Hauptschleife
   const pattern = ['blue', 'blue', 'red', 'blue', 'event', 'blue', 'blue', 'lucky', 'blue', 'red', 'blue', 'event', 'blue', 'duel', 'blue', 'blue', 'red', 'event', 'blue', 'shop', 'blue', 'bad', 'blue', 'event'];
   for (let k = 1; k < M; k++) nodes[k].type = pattern[(k * 7) % pattern.length];
-  nodes[0].type = 'start'; nodes[3].type = 'shop'; nodes[a1].type = 'blue'; nodes[b1].type = 'blue'; nodes[a2].type = 'blue'; nodes[b2].type = 'blue';
+  nodes[0].type = 'start'; nodes[3].type = 'shop'; nodes[Math.floor(M / 2)].type = 'shop';
+  ends.forEach(i => { if (nodes[i].main) nodes[i].type = 'blue'; });
   nodes.forEach(n => { n.y = n.kind === 'bridge' ? 0.9 : heightAt(n.x, n.z) + 0.05; });
-  // Trophäen-Plätze
-  const tro = [Math.floor(M * 0.2), Math.floor(M * 0.42), Math.floor(M * 0.62), Math.floor(M * 0.85), jungleIds[3], Math.floor(M * 0.05) + 5].filter(i => nodes[i] && ![a1, b1, a2, b2].includes(i));
+  // Stern-Plätze, verteilt über Hauptweg und Abzweige
+  const cand = [0.08, 0.2, 0.33, 0.45, 0.58, 0.7, 0.82, 0.93].map(f => Math.floor(M * f)).concat([jungleIds[jungleIds.length - 2], volcIds[1], volcIds[volcIds.length - 2]]);
+  const tro = cand.filter(i => nodes[i] && !ends.includes(i) && nodes[i].kind !== 'bridge');
   tro.forEach(i => { nodes[i].type = 'blue'; nodes[i].trophySpot = true; });
 
-  // Darstellung der Felder
+  // Felder
   const discGeo = new THREE.CylinderGeometry(1.55, 1.7, 0.4, 28), topGeo = new THREE.CircleGeometry(1.4, 28);
   const texCache = {};
   nodes.forEach(n => {
@@ -161,34 +186,33 @@ function buildBoard(scene, W) {
     const top = new THREE.Mesh(topGeo, new THREE.MeshBasicMaterial({ map: texCache[n.type] })); top.rotation.x = -Math.PI / 2; top.position.y = 0.36; g.add(top);
     n.mesh = g; n.top = top; scene.add(g);
   });
-  // Verbindungen: Trittsteine bzw. Holzplanken
-  const stones = [], planks = [];
+  // Verbindungen: Trittsteine an Land, Holzplanken über Wasser
+  const stones = [];
+  const plankM = toon('#b07a45'), plank2 = toon('#c48a52'), postM = toon('#7a4f2a');
   nodes.forEach(n => n.next.forEach(j => {
-    const m = nodes[j], dx = m.x - n.x, dz = m.z - n.z, d = Math.hypot(dx, dz), steps = Math.max(1, Math.round(d / 1.6) - 2);
-    for (let s = 1; s <= steps; s++) {
-      const t = s / (steps + 1), x = n.x + dx * t, z = n.z + dz * t;
-      if (n.kind === 'bridge' || m.kind === 'bridge') planks.push([x, z, Math.atan2(dx, dz)]); else stones.push([x, z, Math.atan2(dx, dz)]);
+    const m = nodes[j], dx = m.x - n.x, dz = m.z - n.z, d = Math.hypot(dx, dz), ang = Math.atan2(dx, dz);
+    if (n.kind === 'bridge' || m.kind === 'bridge') {
+      const seg = new THREE.Group(); seg.position.set((n.x + m.x) / 2, 0, (n.z + m.z) / 2); seg.rotation.y = ang; scene.add(seg);
+      const np = Math.max(2, Math.round(d / 1.1));
+      for (let i = 0; i < np; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(4, 0.22, 0.95), i % 2 ? plankM : plank2); p.position.set(0, 0.62, -d / 2 + (i + 0.5) * d / np); p.castShadow = p.receiveShadow = true; seg.add(p); }
+      for (const sd of [-1, 1]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 3.4, 8), postM); post.position.set(sd * 2.1, 0.2, -d / 2); post.castShadow = true; seg.add(post); const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, d), postM); rail.position.set(sd * 2.1, 1.85, 0); seg.add(rail); }
+      return;
     }
+    const steps = Math.max(1, Math.round(d / 1.6) - 2);
+    for (let s2 = 1; s2 <= steps; s2++) { const t = s2 / (steps + 1); stones.push([n.x + dx * t, n.z + dz * t, ang]); }
   }));
   W.inst(new THREE.CylinderGeometry(0.45, 0.5, 0.18, 10), toon('#fff3d6'), stones, (o, i, p) => { o.position.y += 0.06; o.rotation.y = p[2]; o.scale.set(1, 1, 0.8); }, false);
-  // Steg
-  const bA = nodes[a1], bB = nodes[b1], blen = Math.hypot(bB.x - bA.x, bB.z - bA.z), bang = Math.atan2(bB.x - bA.x, bB.z - bA.z);
-  const deck = new THREE.Group(); deck.position.set((bA.x + bB.x) / 2, 0, (bA.z + bB.z) / 2); deck.rotation.y = bang; scene.add(deck);
-  const plankM = toon('#b07a45'), postM = toon('#7a4f2a');
-  const nP = Math.floor(blen / 1.1);
-  for (let i = 0; i < nP; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.22, 0.95), i % 2 ? plankM : toon('#c48a52')); p.position.set(0, 0.62, -blen / 2 + i * 1.1 + 0.5); p.castShadow = p.receiveShadow = true; deck.add(p); }
-  for (let i = 0; i <= nP; i += 4) for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 3.4, 8), postM); p.position.set(s * 2.2, 0.2, -blen / 2 + i * 1.1); p.castShadow = true; deck.add(p); }
-  for (const s of [-1, 1]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, blen), postM); r.position.set(s * 2.2, 1.85, 0); deck.add(r); }
-  void planks;
-  return { nodes, M, trophySpots: tro, junctions: { [a1]: ['Strand', 'Holzsteg (kurz, gefährlich)'], [a2]: ['Strand', 'Dschungelpfad'] } };
+  // Wegweiser an Abzweigungen
+  Object.keys(junctions).forEach(id => { const n = nodes[id]; const g = new THREE.Group(); g.position.set(n.x + 2.2, n.y, n.z + 0.5); const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.6, 6), postM); pole.position.y = 1.3; g.add(pole); for (let k = 0; k < 2; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 0.1), toon(k ? '#e8c48a' : '#d9a95f')); b.position.set(k ? -0.5 : 0.5, 2.1 - k * 0.5, 0); b.rotation.y = k ? 0.4 : -0.4; outline(b, 1.06); g.add(b); } scene.add(g); });
+  return { nodes, M, trophySpots: tro, junctions };
 }
 
 function decorate(scene, W, B) {
   const nodes = B.nodes;
   const nearPath = (x, z, r) => nodes.some(n => (n.x - x) ** 2 + (n.z - z) ** 2 < r * r);
-  const spots = (n, test) => { const out = []; let t = 0; while (out.length < n && t++ < n * 60) { const a = Math.random() * TAU, d = Math.random() * 75, x = Math.cos(a) * d, z = Math.sin(a) * d; if (test(x, z, heightAt(x, z), d, a)) out.push([x, z]); } return out; };
+  const spots = (n, test) => { const out = []; let t = 0; while (out.length < n && t++ < n * 60) { const a = Math.random() * TAU, d = Math.random() * 118, x = Math.cos(a) * d, z = Math.sin(a) * d; if (test(x, z, heightAt(x, z), d, a)) out.push([x, z]); } return out; };
   // Palmen
-  const palmSpots = spots(70, (x, z, h, d, a) => h > 0.4 && h < 5 && !nearPath(x, z, 3.2) && d > 12);
+  const palmSpots = spots(150, (x, z, h, d, a) => h > 0.4 && h < 5 && !nearPath(x, z, 4.6) && d > 12);
   const trunkGeo = new THREE.CylinderGeometry(0.28, 0.42, 1.4, 7);
   const leafGeo = (() => { const g = new THREE.PlaneGeometry(1.2, 5.2, 1, 8); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i) + 2.6; p.setZ(i, -((y / 5.2) ** 2) * 2.2); p.setX(i, p.getX(i) * Math.sin(Math.PI * clamp(y / 5.2, 0.05, 1))); p.setY(i, y); } g.rotateX(-Math.PI / 2 + 0.25); g.computeVertexNormals(); return g; })();
   const trunkM = toon('#9a6b3c'), leafM = toon('#3fae4a', { side: THREE.DoubleSide }), leafM2 = toon('#5cc957', { side: THREE.DoubleSide }), cocoM = toon('#6b4423');
@@ -202,27 +226,27 @@ function decorate(scene, W, B) {
     W.anim.push(t => { p.rotation.z = Math.sin(t * 0.9 + pi) * 0.02; });
   });
   // Laubbäume und Büsche im Inneren (Dschungel)
-  const treeSpots = spots(80, (x, z, h, d) => h > 1.1 && h < 7 && !nearPath(x, z, 3.2) && d < 48);
+  const treeSpots = spots(170, (x, z, h, d) => h > 1.1 && h < 9 && !nearPath(x, z, 6.5) && d < 82 && d > 14);
   W.inst(new THREE.CylinderGeometry(0.35, 0.5, 3, 7).translate(0, 1.5, 0), toon('#7a5230'), treeSpots, (o) => o.scale.setScalar(rnd(0.9, 1.4)));
   W.inst(new THREE.IcosahedronGeometry(2.2, 1).translate(0, 4, 0), toon('#2f9a45'), treeSpots, (o) => o.scale.setScalar(rnd(0.9, 1.4)));
-  const bushSpots = spots(140, (x, z, h) => h > 1 && h < 6 && !nearPath(x, z, 2.4));
+  const bushSpots = spots(300, (x, z, h) => h > 1 && h < 9 && !nearPath(x, z, 3));
   const bush = W.inst(new THREE.IcosahedronGeometry(0.9, 1).translate(0, 0.5, 0), toon('#ffffff'), bushSpots, (o) => o.scale.set(rnd(0.8, 1.6), rnd(0.6, 1), rnd(0.8, 1.6)));
   bushSpots.forEach((_, i) => bush.setColorAt(i, new THREE.Color(pick(['#3f9e3f', '#56b84a', '#2f8a3a']))));
   // Blumen
-  const fl = spots(260, (x, z, h) => h > 1.1 && h < 5 && !nearPath(x, z, 1.8));
+  const fl = spots(520, (x, z, h) => h > 1.1 && h < 5 && !nearPath(x, z, 1.8));
   const fm = W.inst(new THREE.SphereGeometry(0.22, 6, 4).translate(0, 0.25, 0), toon('#ffffff'), fl, null, false);
   fl.forEach((_, i) => fm.setColorAt(i, new THREE.Color(pick(['#ff6fa8', '#ffe14d', '#ffffff', '#b98bff', '#ff8a3d'])))); fm.instanceColor.needsUpdate = true;
   // Felsen
-  const rockSpots = spots(40, (x, z, h, d) => !nearPath(x, z, 3) && h < 1.2 && h > -2);
+  const rockSpots = spots(80, (x, z, h, d) => !nearPath(x, z, 3) && h < 1.2 && h > -2);
   W.inst(new THREE.DodecahedronGeometry(1.2, 0), toon('#a59a8c'), rockSpots, (o) => { o.scale.set(rnd(0.7, 2), rnd(0.5, 1.2), rnd(0.7, 2)); o.rotation.x = Math.random(); });
   // Seesterne und Muscheln
   const star = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = i / 10 * TAU - Math.PI / 2, r = i % 2 ? 0.18 : 0.45; i ? star.lineTo(Math.cos(a) * r, Math.sin(a) * r) : star.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
   const sg = new THREE.ExtrudeGeometry(star, { depth: 0.08, bevelEnabled: false }).rotateX(-Math.PI / 2);
-  const ss = spots(30, (x, z, h) => h > 0.2 && h < 0.9 && !nearPath(x, z, 1.8));
+  const ss = spots(60, (x, z, h) => h > 0.2 && h < 0.9 && !nearPath(x, z, 1.8));
   const sm = W.inst(sg, toon('#ffffff'), ss, (o) => o.position.y += 0.05, false); ss.forEach((_, i) => sm.setColorAt(i, new THREE.Color(pick(['#ff7b54', '#ff5fa2', '#ffb347'])))); sm.instanceColor.needsUpdate = true;
   // Strandhütten
   const hutAt = (th, off) => { const R = islandR(th) - off; return [Math.cos(th) * R, Math.sin(th) * R]; };
-  [[0.35, 15], [2.6, 16], [4.0, 15], [5.6, 14]].forEach(([th, off]) => {
+  [[0.35, 15], [1.2, 16], [2.6, 16], [3.3, 15], [4.0, 15], [4.9, 16], [5.6, 14]].forEach(([th, off]) => {
     const [x, z] = hutAt(th, off); if (nearPath(x, z, 4)) return;
     const h = new THREE.Group(); h.position.set(x, heightAt(x, z), z); h.rotation.y = -th + Math.PI / 2;
     for (const [px, pz] of [[-1.5, -1.5], [1.5, -1.5], [-1.5, 1.5], [1.5, 1.5]]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.2, 6), toon('#7a4f2a')); p.position.set(px, 0.6, pz); h.add(p); }
@@ -232,7 +256,7 @@ function decorate(scene, W, B) {
     scene.add(h);
   });
   // Leuchtturm
-  { const th = 0.9, R = islandR(th) + 2, x = Math.cos(th) * R, z = Math.sin(th) * R;
+  { const th = PEN, R = islandR(th) + 2, x = Math.cos(th) * R, z = Math.sin(th) * R;
     const lh = new THREE.Group(); lh.position.set(x, -1, z);
     const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(4, 0), toon('#9a8f80')); rock.scale.set(1.3, 0.6, 1.3); lh.add(rock);
     for (let i = 0; i < 5; i++) { const s = new THREE.Mesh(new THREE.CylinderGeometry(1.5 - i * 0.12, 1.6 - i * 0.12, 2.2, 16), toon(i % 2 ? '#e8434a' : '#ffffff')); s.position.y = 2.5 + i * 2.2; s.castShadow = true; outline(s, 1.03); lh.add(s); }
@@ -244,30 +268,34 @@ function decorate(scene, W, B) {
   // Vulkan-Rauch
   const smokeM = new THREE.MeshLambertMaterial({ color: '#f2efe9', transparent: true, opacity: 0.7, depthWrite: false });
   const puffs = []; for (let i = 0; i < 9; i++) { const p = new THREE.Mesh(new THREE.SphereGeometry(1.4, 10, 8), smokeM.clone()); scene.add(p); puffs.push({ m: p, o: i / 9 }); }
-  W.anim.push(t => puffs.forEach(p => { const k = (t * 0.12 + p.o) % 1; p.m.position.set(Math.sin(k * 5 + p.o * 9) * 1.5 + k * 6, 10 + k * 18, Math.cos(k * 4) * 1.2); p.m.scale.setScalar(0.6 + k * 2.4); p.m.material.opacity = 0.75 * (1 - k); }));
+  W.anim.push(t => puffs.forEach(p => { const k = (t * 0.12 + p.o) % 1; p.m.position.set(Math.sin(k * 5 + p.o * 9) * 1.5 + k * 6, 14 + k * 20, Math.cos(k * 4) * 1.2); p.m.scale.setScalar(0.6 + k * 2.4); p.m.material.opacity = 0.75 * (1 - k); }));
   // Segelboot
   { const boat = new THREE.Group(); const hull = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 0.8, 1.2, 12, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).rotateY(Math.PI / 2), toon('#ffffff')); hull.scale.set(1, 1, 3); boat.add(hull);
     const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 6, 6), toon('#7a4f2a')); mast.position.y = 3; boat.add(mast);
     const sail = new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.8, 0.2), new THREE.Vector3(0, 5.8, 0.2), new THREE.Vector3(0, 0.8, 3)]), toon('#ff6f61', { side: THREE.DoubleSide })); boat.add(sail);
-    scene.add(boat); W.anim.push(t => { const a = t * 0.05; boat.position.set(Math.cos(a) * 92, Math.sin(t * 1.3) * 0.2, Math.sin(a) * 92); boat.rotation.y = -a; boat.rotation.z = Math.sin(t * 1.1) * 0.06; }); }
+    scene.add(boat); W.anim.push(t => { const a = t * 0.05; boat.position.set(Math.cos(a) * 140, Math.sin(t * 1.3) * 0.2, Math.sin(a) * 140); boat.rotation.y = -a; boat.rotation.z = Math.sin(t * 1.1) * 0.06; }); }
   // Wolken
   const cloudM = toon('#ffffff');
   for (let i = 0; i < 9; i++) { const c = new THREE.Group(); for (let k = 0; k < 5; k++) { const s = new THREE.Mesh(new THREE.SphereGeometry(rnd(3, 6), 12, 8), cloudM); s.position.set(k * 4 - 8, rnd(-1, 1.5), rnd(-2, 2)); c.add(s); } c.position.set(rnd(-200, 200), rnd(55, 90), rnd(-220, 60)); scene.add(c); const sp = rnd(0.5, 1.2); W.anim.push((t, dt) => { c.position.x += sp * dt; if (c.position.x > 240) c.position.x = -240; }); }
   // Sonnenschirme am Strand
-  const um = spots(14, (x, z, h) => h > 0.3 && h < 0.9 && !nearPath(x, z, 3));
+  const um = spots(26, (x, z, h) => h > 0.3 && h < 0.9 && !nearPath(x, z, 3));
   um.forEach(([x, z], i) => { const g = new THREE.Group(); g.position.set(x, heightAt(x, z), z); const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3, 6), toon('#ffffff')); pole.position.y = 1.5; g.add(pole); const top = new THREE.Mesh(new THREE.ConeGeometry(1.8, 0.8, 10), toon(pick(['#ff5f5f', '#4fa8ff', '#ffd23d', '#ff8fc0']))); top.position.y = 3; top.castShadow = true; outline(top, 1.04); g.add(top); const towel = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 2.2), toon(pick(['#ffffff', '#ffb3c7', '#b3e5ff']))); towel.rotation.x = -Math.PI / 2; towel.position.set(1, 0.05, 0.6); g.add(towel); scene.add(g); });
 }
 
-// ---------- Trophäe ----------
+// ---------- Stern ----------
 function makeTrophy() {
   const g = new THREE.Group();
-  const prof = [[0, 0], [0.7, 0], [0.7, 0.18], [0.3, 0.3], [0.18, 0.8], [0.25, 1.0], [0.7, 1.25], [0.85, 1.9], [0.78, 1.95], [0.6, 1.4], [0, 1.25]].map(p => new THREE.Vector2(p[0], p[1]));
-  const gold = new THREE.MeshStandardMaterial({ color: '#ffcc33', metalness: 0.85, roughness: 0.25, emissive: '#7a5200', emissiveIntensity: 0.35 });
-  const cup = new THREE.Mesh(new THREE.LatheGeometry(prof, 28), gold); cup.castShadow = true; g.add(cup);
-  for (const s of [-1, 1]) { const h = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.07, 8, 16, Math.PI * 1.2), gold); h.position.set(s * 0.82, 1.5, 0); h.rotation.z = s > 0 ? -0.9 : Math.PI + 0.9; g.add(h); }
-  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(128, 128, (c) => { const gr = c.createRadialGradient(64, 64, 4, 64, 64, 64); gr.addColorStop(0, 'rgba(255,240,150,.9)'); gr.addColorStop(1, 'rgba(255,220,80,0)'); c.fillStyle = gr; c.fillRect(0, 0, 128, 128); }), transparent: true, depthWrite: false }));
-  glow.scale.set(5, 5, 1); glow.position.y = 1.2; g.add(glow);
-  g.scale.setScalar(1.3);
+  const sh = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = i / 10 * TAU + Math.PI / 2, r = i % 2 ? 0.48 : 1.15; const x = Math.cos(a) * r, y = Math.sin(a) * r; i ? sh.lineTo(x, y) : sh.moveTo(x, y); } sh.closePath();
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.32, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.12, bevelSegments: 3 }); geo.center();
+  const gold = new THREE.MeshStandardMaterial({ color: '#ffd23d', metalness: 0.6, roughness: 0.25, emissive: '#b37a00', emissiveIntensity: 0.45 });
+  const star = new THREE.Mesh(geo, gold); star.position.y = 1.4; star.castShadow = true; outline(star, 1.05); g.add(star);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(128, 128, (c) => { const gr = c.createRadialGradient(64, 64, 4, 64, 64, 64); gr.addColorStop(0, 'rgba(255,245,170,.95)'); gr.addColorStop(1, 'rgba(255,220,80,0)'); c.fillStyle = gr; c.fillRect(0, 0, 128, 128); }), transparent: true, depthWrite: false }));
+  glow.scale.set(5.5, 5.5, 1); glow.position.y = 1.4; g.add(glow);
+  // kleine Funkel-Sterne
+  const sp = new THREE.Group(); const sg = new THREE.OctahedronGeometry(0.14); const sm = new THREE.MeshBasicMaterial({ color: '#fff6c0' });
+  for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(sg, sm); const a = i / 6 * TAU; m.position.set(Math.cos(a) * 1.8, 1.4 + Math.sin(i * 1.7) * 0.6, Math.sin(a) * 1.8); sp.add(m); }
+  g.add(sp); g.userData.sparkles = sp;
+  g.scale.setScalar(1.25);
   return g;
 }
 
@@ -292,7 +320,7 @@ const CSS = `.pt{position:absolute;inset:0;background:#7fd0f0;overflow:hidden;fo
 .pt-card.act{transform:scale(1.07);box-shadow:0 0 0 5px var(--c),0 10px 26px rgba(0,0,0,.25)}
 .pt-c0{left:14px;top:14px}.pt-c1{right:14px;top:14px}.pt-c2{left:14px;bottom:14px}.pt-c3{right:14px;bottom:14px}
 .ico-coin{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3a0,#f2b705 60%,#c98a00);border:2px solid #a87300;display:inline-block}
-.ico-tro{width:20px;height:20px;display:inline-block;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v5a6 6 0 0 1-12 0z' fill='%23f2b705' stroke='%23a87300'/%3E%3Cpath d='M6 5H3c0 3 1.5 4.5 3.5 5M18 5h3c0 3-1.5 4.5-3.5 5' stroke='%23a87300' fill='none' stroke-width='1.6'/%3E%3Crect x='10.5' y='13' width='3' height='4' fill='%23c98a00'/%3E%3Crect x='7' y='17' width='10' height='4' rx='1' fill='%238a5533'/%3E%3C/svg%3E")}
+.ico-tro{width:22px;height:22px;display:inline-block;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.8l3 6.4 7 .8-5.2 4.8 1.4 6.9L12 17.2l-6.2 3.5 1.4-6.9L2 9l7-.8z' fill='%23ffd23d' stroke='%23b37a00' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E")}
 .pt-round{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:rgba(255,255,255,.92);border-radius:999px;padding:8px 24px;font-weight:900;font-size:20px;color:#3d4145;box-shadow:0 6px 18px rgba(0,0,0,.15);border:4px solid #fff}
 .pt-round.end{background:#ff6f61;color:#fff}
 .pt-banner{position:absolute;left:0;right:0;top:36%;text-align:center;pointer-events:none;font-weight:900;font-size:clamp(40px,6.5vw,92px);color:#fff;text-shadow:0 5px 0 rgba(0,0,0,.25),0 0 30px rgba(0,0,0,.25);opacity:0;transform:scale(.6);transition:opacity .3s,transform .35s cubic-bezier(.2,1.6,.4,1)}
@@ -400,7 +428,7 @@ function open(box, K) {
     G = null; K.send({ t: 'mode', m: 'pointer' }); Sound.music('party');
     const n = Math.max(1, K.players().length);
     if (setup.humans > Math.max(n, 1)) setup.humans = Math.max(n, 1);
-    screen(`<h2>Insel-Party</h2><p>Würfeln, Münzen sammeln, Trophäen kaufen. Wer am Ende die meisten Trophäen hat, gewinnt.</p>
+    screen(`<h2>Insel-Party</h2><p>Würfeln, Münzen sammeln, Sterne kaufen. Wer am Ende die meisten Sterne hat, gewinnt.</p>
       <h3>Wie viele spielen mit?</h3><div class="pt-row">${[1, 2, 3, 4].map(k => `<button class="hv pt-b${k === setup.humans ? ' sel' : ''}" data-h="${k}" ${k > Math.max(n, 1) ? 'style="opacity:.45"' : ''}>${k} ${k === 1 ? 'Spieler' : 'Spieler'}<small>${4 - k} Computer</small></button>`).join('')}</div>
       <h3>Runden</h3><div class="pt-row">${[10, 15, 20].map(r => `<button class="hv pt-b${r === setup.rounds ? ' sel' : ''}" data-r="${r}">${r} Runden<small>ca. ${Math.round(r * 2.6)} Min.</small></button>`).join('')}</div>
       <h3>Computer-Stärke</h3><div class="pt-row">${['Leicht', 'Mittel', 'Schwer'].map((d, i) => `<button class="hv pt-b${i === setup.cpu ? ' sel' : ''}" data-c="${i}">${d}</button>`).join('')}</div>
@@ -446,7 +474,7 @@ function open(box, K) {
   let scene, camera, board, world, trophyMesh, diceObj, numSp, camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(0, 70, 90), camLook = new THREE.Vector3(), camMode = 'over';
   const coinFx = [];
   function buildScene() {
-    scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(50, W / H, 0.5, 2000);
+    scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(50, W / H, 0.5, 2600);
     world = buildWorld(scene); board = buildBoard(scene, world); decorate(scene, world, board);
     trophyMesh = makeTrophy(); scene.add(trophyMesh);
     diceObj = makeDice(); diceObj.m.visible = false; scene.add(diceObj.m);
@@ -463,13 +491,13 @@ function open(box, K) {
           c.root.position.x = lerp(c.root.position.x, n.x + off.x, 0.2); c.root.position.z = lerp(c.root.position.z, n.z + off.z, 0.2); c.root.position.y = n.y + 0.4; }
         if (pl.face != null) c.root.rotation.y = lerp(c.root.rotation.y, pl.face, 0.15);
       });
-      if (G.trophyNode != null) { const n = board.nodes[G.trophyNode]; trophyMesh.position.set(n.x, n.y + 0.6 + Math.sin(time * 2) * 0.25, n.z); trophyMesh.rotation.y = time * 1.2; }
+      if (G.trophyNode != null) { const n = board.nodes[G.trophyNode]; trophyMesh.position.set(n.x, n.y + 0.6 + Math.sin(time * 2) * 0.25, n.z); trophyMesh.rotation.y = time * 1.2; if (trophyMesh.userData.sparkles) trophyMesh.userData.sparkles.rotation.y = -time * 2; }
       if (diceObj.m.visible) { diceObj.m.rotation.x += dt * 4; diceObj.m.rotation.y += dt * 5; }
       for (const f of coinFx) { f.t += dt; f.m.position.y = f.y0 + f.t * (f.up ? 3 : -2); f.m.rotation.y += dt * 8; f.m.material.opacity = 1 - f.t; if (f.t > 1) { scene.remove(f.m); f.dead = true; } }
       for (let i = coinFx.length - 1; i >= 0; i--) if (coinFx[i].dead) coinFx.splice(i, 1);
       // Kamera
       let want, look;
-      if (camMode === 'over') { look = new THREE.Vector3(0, 0, 4); want = new THREE.Vector3(Math.sin(time * 0.05) * 20, 92, 96); }
+      if (camMode === 'over') { look = new THREE.Vector3(0, 0, 4); want = new THREE.Vector3(Math.sin(time * 0.05) * 30, 150, 150); }
       else { look = camTarget.clone(); want = camTarget.clone().add(new THREE.Vector3(0, 17, 21)); }
       camPos.lerp(want, Math.min(1, dt * 2.5)); camLook.lerp(look, Math.min(1, dt * 3.5));
       camera.position.copy(camPos); camera.lookAt(camLook);
@@ -578,10 +606,10 @@ function open(box, K) {
     numSp.sp.visible = false;
   }
   async function trophyOffer(pl) {
-    if (pl.coins < TROPHY_PRICE) { await say('Trophäe', `${pl.name} hat nicht genug Münzen (${TROPHY_PRICE} nötig).`, 1500); return; }
-    const i = await ask(pl, 'Trophäe!', `Für ${TROPHY_PRICE} Münzen kaufen?`, [{ label: 'Ja, kaufen!' }, { label: 'Nein' }], () => 0);
+    if (pl.coins < TROPHY_PRICE) { await say('Stern', `${pl.name} hat nicht genug Münzen (${TROPHY_PRICE} nötig).`, 1500); return; }
+    const i = await ask(pl, 'Ein Stern!', `Für ${TROPHY_PRICE} Münzen kaufen?`, [{ label: 'Ja, kaufen!' }, { label: 'Nein' }], () => 0);
     if (i !== 0) return;
-    addCoins(pl, -TROPHY_PRICE); pl.trophies++; Sound.play('trophy'); pl.anim = 'happy'; banner(pl.name, 'hat eine Trophäe!', 2200); cards();
+    addCoins(pl, -TROPHY_PRICE); pl.trophies++; Sound.play('trophy'); pl.anim = 'happy'; banner(pl.name, 'hat einen Stern!', 2200); cards();
     await wait(2200); pl.anim = 'idle';
     await moveTrophy();
   }
@@ -590,7 +618,7 @@ function open(box, K) {
     G.trophyNode = pick(opts);
     const n = board.nodes[G.trophyNode];
     camMode = 'follow'; camTarget.set(n.x, n.y, n.z); Sound.play('whoosh');
-    banner(first ? 'Die Trophäe' : 'Neue Trophäe', 'steht jetzt hier!', 1800); await wait(2000);
+    banner(first ? 'Der Stern' : 'Neuer Stern', 'wartet jetzt hier!', 1800); await wait(2000);
   }
 
   // ---------- Felder ----------
@@ -619,7 +647,7 @@ function open(box, K) {
     else if (ev === 'chest') { await say('Schatzkiste', `${pl.name} findet eine Schatzkiste mit 10 Münzen.`, 1200); addCoins(pl, 10); await wait(700); }
     else if (ev === 'rain') { await say('Kokos-Regen', 'Alle Spieler bekommen 5 Münzen.', 1200); G.players.forEach(p => addCoins(p, 5)); await wait(700); }
     else if (ev === 'gull') { await say('Diebische Möwe', `Eine Möwe schnappt ${pl.name} 6 Münzen weg.`, 1200); addCoins(pl, -6); await wait(700); }
-    else if (ev === 'trophy') { await say('Inselbeben', 'Die Trophäe zieht an einen anderen Ort.', 1200); await moveTrophy(); follow(pl); }
+    else if (ev === 'trophy') { await say('Inselbeben', 'Der Stern zieht an einen anderen Ort.', 1200); await moveTrophy(); follow(pl); }
     else if (ev === 'swap') { const o = pick(G.players.filter(p => p !== pl)); await say('Strudel', `${pl.name} tauscht den Platz mit ${o.name}.`); const a = pl.node; pl.node = o.node; o.node = a; await wait(800); follow(pl); }
   }
   async function luckySpace(pl) {
@@ -636,7 +664,7 @@ function open(box, K) {
     if (ev === 'lose') { await say('Sturmwolke', `Ein Gewitter pustet ${pl.name} 10 Münzen weg.`, 1400); addCoins(pl, -10); }
     else if (ev === 'share') { await say('Sturmwolke', 'Alle Münzen werden gleich verteilt!', 1500); const tot = G.players.reduce((s, p) => s + p.coins, 0), each = Math.floor(tot / 4); G.players.forEach(p => { p.coins = each; }); Sound.play('whoosh'); cards(); }
     else if (ev === 'give') { await say('Sturmwolke', `${pl.name} muss jedem Mitspieler 4 Münzen geben.`, 1400); G.players.forEach(o => { if (o !== pl) { const d = -addCoins(pl, -4); addCoins(o, d); } }); }
-    else { await say('Sturmwolke', `${pl.name} verliert eine Trophäe!`, 1500); pl.trophies--; cards(); }
+    else { await say('Sturmwolke', `${pl.name} verliert einen Stern!`, 1500); pl.trophies--; cards(); }
     await wait(700);
   }
   async function shop(pl, passing) {
@@ -682,7 +710,7 @@ function open(box, K) {
       const o = others[oi], n = Math.min(o.coins, 5 + Math.floor(Math.random() * 11)); addCoins(o, -n); addCoins(pl, n); await say('Klauhand', `${pl.name} stibitzt ${n} Münzen von ${o.name}!`, 1500); return 1;
     }
     if (key === 'compass') {
-      const prev = board.nodes[G.trophyNode].prev[0]; await say('Kompassmuschel', `${pl.name} reist direkt zur Trophäe!`, 1300); Sound.play('whoosh'); pl.node = prev; await wait(700); follow(pl); return 1;
+      const prev = board.nodes[G.trophyNode].prev[0]; await say('Kompassmuschel', `${pl.name} reist direkt zum Stern!`, 1300); Sound.play('whoosh'); pl.node = prev; await wait(700); follow(pl); return 1;
     }
     if (key === 'swap') {
       const others = G.players.filter(o => o !== pl);
@@ -776,7 +804,7 @@ function open(box, K) {
       const best = Math.max(...G.players.map(f)); const ws = G.players.filter(p => f(p) === best && best > 0);
       if (!ws.length) continue;
       ws.forEach(w => w.trophies++); Sound.play('trophy'); cards();
-      await say('Bonus-Trophäe: ' + name, ws.map(w => w.name).join(' und ') + ' für ' + why + '.', 2400);
+      await say('Bonus-Stern: ' + name, ws.map(w => w.name).join(' und ') + ' für ' + why + '.', 2400);
     }
     const ranks = rankList();
     await podium(ranks);
@@ -801,10 +829,10 @@ function open(box, K) {
       tro.rotation.y = time; conf.forEach(c => { c.m.position.y -= c.v * dt; c.m.rotation.x += c.s * dt; c.m.rotation.y += c.s * dt * 0.7; if (c.m.position.y < 0) c.m.position.y = 18; });
     }, render() { renderer.render(sc, cam); hc.setTransform(1, 0, 0, 1, 0, 0); hc.clearRect(0, 0, hud.width, hud.height); } });
     q('#pt-cards').innerHTML = ''; q('#pt-round').style.display = 'none';
-    Sound.play('record'); banner(ranks[0].name + ' gewinnt!', ranks[0].trophies + ' Trophäen · ' + ranks[0].coins + ' Münzen', 4000);
+    Sound.play('record'); banner(ranks[0].name + ' gewinnt!', ranks[0].trophies + ' Sterne · ' + ranks[0].coins + ' Münzen', 4000);
     await wait(4200);
     ov.classList.add('on', 'glass');
-    panel.innerHTML = `<h2>${esc(ranks[0].name)} gewinnt!</h2><table class="pt-tbl">${ranks.map((p, i) => `<tr><td class="n">${i + 1}.</td><td><img src="${portraits[p.def.id]}" alt="">${esc(p.name)} <span style="color:${p.color}">${p.human ? '(Spieler ' + p.phone + ')' : '(Computer)'}</span></td><td class="n">${p.trophies} Trophäen</td><td class="n">${p.coins} Münzen</td></tr>`).join('')}</table>
+    panel.innerHTML = `<h2>${esc(ranks[0].name)} gewinnt!</h2><table class="pt-tbl">${ranks.map((p, i) => `<tr><td class="n">${i + 1}.</td><td><img src="${portraits[p.def.id]}" alt="">${esc(p.name)} <span style="color:${p.color}">${p.human ? '(Spieler ' + p.phone + ')' : '(Computer)'}</span></td><td class="n">${p.trophies} Sterne</td><td class="n">${p.coins} Münzen</td></tr>`).join('')}</table>
       <div class="pt-row"><button class="hv pt-b big" id="pt-again">Neues Spiel</button><button class="hv pt-b" id="pt-menu">Konsolen-Menü</button></div>`;
     K.send({ t: 'mode', m: 'pointer' });
     bind('#pt-again', () => { cleanup(); showTitle(); });
@@ -860,7 +888,7 @@ const tileSVG = big => `<svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid
   ${[[70, 140, '#2f8fe8'], [110, 150, '#e8434a'], [150, 154, '#36b85a'], [190, 152, '#2f8fe8'], [230, 146, '#f4c430'], [262, 136, '#2f8fe8']].map(([x, y, c]) => `<ellipse cx="${x}" cy="${y}" rx="15" ry="6" fill="${c}" stroke="#fff" stroke-width="2"/>`).join('')}
   <g class="pb"><circle cx="110" cy="132" r="15" fill="#ff8fc0" stroke="#2a1c14" stroke-width="2.5"/><circle cx="105" cy="129" r="3" fill="#1d1410"/><circle cx="115" cy="129" r="3" fill="#1d1410"/></g>
   <g class="pb" style="animation-delay:.4s"><circle cx="190" cy="134" r="15" fill="#5b9cf0" stroke="#2a1c14" stroke-width="2.5"/><circle cx="185" cy="131" r="3" fill="#1d1410"/><circle cx="195" cy="131" r="3" fill="#1d1410"/></g>
-  <path d="M250 112h14v7c0 5-3 8-7 8s-7-3-7-8z" fill="#f2b705" stroke="#a87300" stroke-width="1.5"/>
+  <path d="M257 98l4 8.5 9.3 1-7 6.4 1.9 9.2-8.2-4.7-8.2 4.7 1.9-9.2-7-6.4 9.3-1z" fill="#ffd23d" stroke="#b37a00" stroke-width="1.5" stroke-linejoin="round"/>
   ${big ? '<text x="160" y="44" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="900" font-size="30" fill="#fff" stroke="#ff7a3d" stroke-width="6" paint-order="stroke">Insel-Party</text>' : ''}</svg>`;
 
 const PartyChannel = { id: 'party', name: 'Insel-Party', music: 'party', tile: el => el.innerHTML = tileSVG(0), preview: el => el.innerHTML = tileSVG(1), open };

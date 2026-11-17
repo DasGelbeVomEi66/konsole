@@ -37,7 +37,7 @@ Tastatur am Laptop: Esc = HOME, Leertaste = A, Rücktaste = B, Pfeile bewegen de
 ## Insel-Party
 
 - Brettspiel für 1 bis 4 Spieler, fehlende Plätze übernehmen Computer. Jedes Handy wird über den QR-Code gekoppelt (Spieler 1 bis 4).
-- 10, 15 oder 20 Runden. Würfeln durch Schütteln des Handys (oder Taste). Münzen sammeln, Trophäen für 20 Münzen kaufen.
+- 10, 15 oder 20 Runden. Würfeln durch Schütteln des Handys (oder Taste). Münzen sammeln, Sterne für 20 Münzen kaufen.
 - Felder: Plus, Minus, Ereignis, Glück, Pech, Laden, Duell. Gegenstände: Doppelwürfel, Dreifachwürfel, Klauhand, Kompassmuschel, Tauschmuschel, Fallennetz.
 - Nach jeder Runde ein Minispiel (jeder gegen jeden, 2 gegen 2 oder 1 gegen 3, je nach Feldfarben). 14 Minispiele, davon 2 mit Allgemeinwissen.
-- Die letzten 5 Runden sind der Endspurt, am Ende gibt es 3 Bonus-Trophäen.
+- Die letzten 5 Runden sind der Endspurt, am Ende gibt es 3 Bonus-Sterne.
