@@ -138,6 +138,11 @@ export function makeCreature(def) {
       const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.6, 0.02), toon('#ffffff')); stripe.position.set(0, 0, 0.05); board.add(stripe);
       break;
     }
+    default: {
+      const hair = SPH(R * 1.03, Hair, 1.04); hair.scale.set(1.02, 0.7, 1.03); add(hair, 0, 0.14, -0.1);
+      for (let i = 0; i < 5; i++) { const t = SPH(0.2, Hair, 1.08, 12); const a = (i / 4 - 0.5) * 1.6; add(t, Math.sin(a) * 0.45, 0.42, Math.cos(a) * 0.3 + 0.12); }
+      break;
+    }
     case 'flora': {
       const hair = SPH(R * 1.03, Hair, 1.04); hair.scale.set(1.02, 0.8, 1.03); add(hair, 0, 0.06, -0.1);
       for (const s of [-1, 1]) { const br = CAP(0.11, 0.45, Hair); br.position.set(s * 0.45, -0.55, -0.25); br.rotation.z = s * 0.2; head.add(br); const tie = SPH(0.07, toon('#ff6fa8'), 0, 8); tie.position.set(s * 0.5, -0.85, -0.25); head.add(tie); }

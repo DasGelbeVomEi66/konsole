@@ -30,9 +30,11 @@ Tastatur am Laptop: Esc = HOME, Leertaste = A, Rücktaste = B, Pfeile bewegen de
 ## Kart-Kanal (Turbo-Flitzer)
 
 - 1 Spieler gegen 7 Computerfahrer oder 2 Spieler mit geteiltem Bildschirm gegen 6. Das zweite Handy koppelt sich über den QR-Code im Kart-Menü.
-- Im Rennen wechselt das Handy in den Lenkrad-Modus: quer halten, neigen zum Lenken. Tasten: GAS, BREMSE, DRIFT (halten in der Kurve, loslassen für Turbo), ITEM.
+- 5 Strecken mit Höhen, Sprungrampen, Boost-Feldern, Hindernissen und Abgründen: Sonnenhügel, Krabbenstrand, Gletscherpass, Mondburg und die Sternenbahn im Weltall (Regenbogen-Fahrbahn ohne Geländer).
+- Grasstreifen sind sichtbar und befahrbar (bremsen), mit Boost lassen sich Kurven abkürzen. Wände stehen sichtbar am Rand. Wer abstürzt, wird von der Rettungsdrohne zurückgebracht.
+- Im Rennen wechselt das Handy in den Lenkrad-Modus: quer halten, neigen zum Lenken. Tasten: GAS, BREMSE, DRIFT (halten in der Kurve, drei Turbo-Stufen; in der Luft nach einer Rampe = Trick), ITEM.
 - Tastatur: Spieler 1 Pfeile, Shift = Drift, Enter = Item. Spieler 2 WASD, F = Drift, E = Item.
-- Items: Turbo, Dreifach-Turbo, Ölfleck, Prallball, Suchdrohne, Schutzblase, Schrumpfwelle, Tintenwolke, Goldrausch.
+- 17 Items: Raketenbooster, Dreifach-Booster, Goldbooster, Ölfleck, Kristall-Attrappe, Prallball, Dreifach-Prallball, Suchdrohne, Dreifach-Drohne, Kometenjäger, Knallkugel, Schutzblase, Schrumpfwelle, Tintenwolke, Goldrausch, Autopilot-Rakete, Gewitterwolke.
 
 ## Insel-Party
 
