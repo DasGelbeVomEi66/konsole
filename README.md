@@ -33,3 +33,11 @@ Tastatur am Laptop: Esc = HOME, Leertaste = A, Rücktaste = B, Pfeile bewegen de
 - Im Rennen wechselt das Handy in den Lenkrad-Modus: quer halten, neigen zum Lenken. Tasten: GAS, BREMSE, DRIFT (halten in der Kurve, loslassen für Turbo), ITEM.
 - Tastatur: Spieler 1 Pfeile, Shift = Drift, Enter = Item. Spieler 2 WASD, F = Drift, E = Item.
 - Items: Turbo, Dreifach-Turbo, Ölfleck, Prallball, Suchdrohne, Schutzblase, Schrumpfwelle, Tintenwolke, Goldrausch.
+
+## Insel-Party
+
+- Brettspiel für 1 bis 4 Spieler, fehlende Plätze übernehmen Computer. Jedes Handy wird über den QR-Code gekoppelt (Spieler 1 bis 4).
+- 10, 15 oder 20 Runden. Würfeln durch Schütteln des Handys (oder Taste). Münzen sammeln, Trophäen für 20 Münzen kaufen.
+- Felder: Plus, Minus, Ereignis, Glück, Pech, Laden, Duell. Gegenstände: Doppelwürfel, Dreifachwürfel, Klauhand, Kompassmuschel, Tauschmuschel, Fallennetz.
+- Nach jeder Runde ein Minispiel (jeder gegen jeden, 2 gegen 2 oder 1 gegen 3, je nach Feldfarben). 14 Minispiele, davon 2 mit Allgemeinwissen.
+- Die letzten 5 Runden sind der Endspurt, am Ende gibt es 3 Bonus-Trophäen.

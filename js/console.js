@@ -126,7 +126,7 @@
     peer.on('connection', c => {
       c.on('open', () => {
         const used = [...conns.values()].map(x => x.player);
-        let player = used.includes(1) ? (used.includes(2) ? 0 : 2) : 1;
+        let player = [1, 2, 3, 4].find(n => !used.includes(n)) || 0;
         if (!player) { try { c.send({ t: 'full' }); } catch (e) {} setTimeout(() => c.close(), 300); return; }
         conns.set(c, { c, player });
         try { c.send({ t: 'player', n: player }); } catch (e) {}
@@ -166,6 +166,7 @@
   function onData(d, player) {
     if (!d || typeof d !== 'object') return;
     if (d.t === 's') { if (chan && chan.onSteer) chan.onSteer(d.v, player); return; }
+    if (chan && chan.onData && !homeOpen && chan.onData(d, player)) return;
     if (d.t === 'm') {
       lastRemote = performance.now(); K.cursor.fromRemote = true;
       const ppd = innerWidth / (40 / K.sens);

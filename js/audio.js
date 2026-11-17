@@ -81,6 +81,20 @@ const Sound = (() => {
     lap() { const t = ctx.currentTime; osc('triangle', mtof(81), t, 0.15, 0.14, sfx, { wet: 1 }); osc('triangle', mtof(88), t + 0.15, 0.3, 0.14, sfx, { wet: 1 }); },
     finalLap() { const t = ctx.currentTime; [72, 72, 79, 84].forEach((m, i) => osc('square', mtof(m), t + i * 0.12, 0.1, 0.08, sfx, { lp: 3000, wet: 1 })); },
     finish() { const t = ctx.currentTime; [67, 72, 76, 79, 84, 79, 84].forEach((m, i) => osc('square', mtof(m), t + i * 0.11, i === 6 ? 0.6 : 0.1, 0.08, sfx, { lp: 3500, wet: 1 })); },
+    coin() { const t = ctx.currentTime; osc('square', mtof(88), t, 0.05, 0.07, sfx, { lp: 5000 }); osc('square', mtof(95), t + 0.05, 0.12, 0.07, sfx, { lp: 5000, wet: 1 }); },
+    coinLose() { const t = ctx.currentTime; osc('triangle', mtof(79), t, 0.08, 0.1, sfx); osc('triangle', mtof(72), t + 0.08, 0.14, 0.1, sfx); },
+    step() { const t = ctx.currentTime; osc('sine', 520 + Math.random() * 60, t, 0.05, 0.12, sfx, { to: 300 }); },
+    diceSpin() { const t = ctx.currentTime; osc('square', 1500 + Math.random() * 900, t, 0.015, 0.03, sfx, { lp: 5000 }); },
+    diceHit() { const t = ctx.currentTime; noise(t, 0.15, 0.3, sfx, { type: 'bandpass', f: 1200, q: 0.8 }); [72, 79, 84].forEach((m, i) => osc('triangle', mtof(m), t + 0.05 + i * 0.05, 0.15, 0.12, sfx, { wet: 1 })); },
+    trophy() { const t = ctx.currentTime; [60, 64, 67, 72, 67, 72, 76, 79, 84].forEach((m, i) => osc('triangle', mtof(m + 7), t + i * 0.09, 0.2, 0.11, sfx, { wet: 1 })); },
+    bad() { const t = ctx.currentTime; [55, 54, 53, 48].forEach((m, i) => osc('sawtooth', mtof(m), t + i * 0.18, 0.2, 0.06, sfx, { lp: 1200 })); },
+    event() { const t = ctx.currentTime; [72, 75, 79, 82].forEach((m, i) => osc('sine', mtof(m), t + i * 0.06, 0.2, 0.1, sfx, { wet: 1 })); },
+    whoosh() { const t = ctx.currentTime; noise(t, 0.4, 0.25, sfx, { type: 'bandpass', f: 300, to: 2500, q: 0.7 }); },
+    fanfare() { const t = ctx.currentTime; [[67, 0], [67, 0.15], [67, 0.3], [72, 0.45], [76, 0.75], [79, 1.0]].forEach(([m, d]) => { osc('square', mtof(m), t + d, d > 0.9 ? 0.6 : 0.12, 0.07, sfx, { lp: 3000, wet: 1 }); osc('triangle', mtof(m - 12), t + d, d > 0.9 ? 0.6 : 0.12, 0.08, sfx); }); },
+    win() { const t = ctx.currentTime; [72, 76, 79, 84, 88].forEach((m, i) => osc('triangle', mtof(m), t + i * 0.08, 0.3, 0.12, sfx, { wet: 1 })); },
+    buzz() { const t = ctx.currentTime; osc('sawtooth', 110, t, 0.35, 0.12, sfx, { lp: 800 }); },
+    splash() { const t = ctx.currentTime; noise(t, 0.5, 0.35, sfx, { type: 'lowpass', f: 2500, to: 300 }); },
+    pop() { const t = ctx.currentTime; osc('sine', 300, t, 0.08, 0.25, sfx, { to: 900, glide: 0.06 }); },
     bump() { const t = ctx.currentTime; osc('sine', 140, t, 0.08, 0.3, sfx, { to: 60 }); },
   };
 
@@ -129,6 +143,32 @@ const Sound = (() => {
     if (s % 2 === 1) osc('triangle', mtof(root + (s % 4 === 3 ? 12 : 0)), t, d * 0.9, 0.2, music, { rel: 0.04 });
     if (s === 2 || s === 6 || s === 10 || s === 14) ch.forEach(n => osc('square', mtof(n + 12), t, d * 0.6, 0.018, music, { lp: 2400, rel: 0.04 }));
     const m = raceMel[st]; if (m) { osc('square', mtof(m[0]), t, d * m[1] * 0.85, 0.045, music, { lp: 3200, rel: 0.06, wet: 1 }); osc('triangle', mtof(m[0] - 12), t, d * m[1] * 0.85, 0.05, music, { rel: 0.06 }); }
+  } };
+  // Brettspiel-Musik: fröhlicher Inselgroove mit Steeldrum-artigem Klang, eigene Melodie
+  const PM = [[0,79,2],[2,81,1],[3,79,1],[4,76,2],[6,72,2],[8,74,2],[10,76,4],[16,77,2],[18,79,1],[19,77,1],[20,74,2],[22,71,2],[24,72,2],[26,74,4],
+    [32,76,2],[34,79,2],[36,84,3],[39,83,1],[40,81,2],[42,79,2],[44,76,4],[48,77,2],[50,76,2],[52,74,2],[54,71,2],[56,72,6],
+    [64,84,2],[66,83,1],[67,81,1],[68,79,2],[70,76,2],[72,77,2],[74,79,4],[80,81,2],[82,79,1],[83,77,1],[84,76,2],[86,74,2],[88,76,6],
+    [96,72,2],[98,76,2],[100,79,2],[102,84,2],[104,83,3],[107,81,1],[108,79,4],[112,77,2],[114,74,2],[116,71,2],[118,74,2],[120,72,8]];
+  const partyMel = {}; PM.forEach(([st, n, l]) => partyMel[st] = [n, l]);
+  const partyCh = [[48,52,55],[53,57,60],[55,59,62],[48,52,55],[57,60,64],[53,57,60],[55,59,62],[48,52,55]];
+  function steel(n, t, dur, v) { osc('sine', mtof(n), t, dur, v, music, { a: 0.004, rel: 0.18, wet: 1 }); osc('sine', mtof(n) * 2.76, t, dur * 0.25, v * 0.25, music, { rel: 0.06 }); osc('sine', mtof(n) * 1.5, t, dur * 0.4, v * 0.2, music, { rel: 0.08 }); }
+  tracks.party = { bpm: 112, len: 128, swing: 0.1, play(st, t, d) {
+    const bar = st >> 4, s = st & 15, ch = partyCh[bar], root = ch[0] - 24;
+    if (s === 0 || s === 8) osc('sine', 120, t, 0.12, 0.35, music, { to: 50, glide: 0.1 });
+    if (s === 4 || s === 12) noise(t, 0.05, 0.08, music, { type: 'bandpass', f: 2500, q: 1 });
+    if (s % 2 === 0) noise(t, 0.04, 0.03, music, { type: 'highpass', f: 7000 });
+    if ([0, 3, 6, 8, 11, 14].includes(s)) osc('triangle', mtof(root + (s === 6 || s === 14 ? 7 : s === 11 ? 12 : 0)), t, d * 1.5, 0.2, music, { rel: 0.05 });
+    if (s === 2 || s === 6 || s === 10 || s === 14) ch.forEach(n => steel(n + 12, t, d * 0.8, 0.018));
+    const m = partyMel[st]; if (m) steel(m[0], t, d * m[1] * 0.9, 0.08);
+  } };
+  tracks.mini = { bpm: 156, len: 64, swing: 0, play(st, t, d) {
+    const bar = st >> 4, s = st & 15, roots = [60, 65, 67, 62], r = roots[bar];
+    if (s % 4 === 0) osc('sine', 160, t, 0.1, 0.45, music, { to: 45, glide: 0.1 });
+    if (s === 4 || s === 12) noise(t, 0.1, 0.16, music, { type: 'bandpass', f: 2400, q: 0.7 });
+    noise(t, 0.02, s % 2 ? 0.025 : 0.04, music, { type: 'highpass', f: 9000 });
+    if (s % 2 === 0) osc('triangle', mtof(r - 24 + (s % 8 === 4 ? 12 : 0)), t, d * 1.5, 0.2, music, { rel: 0.04 });
+    const n = r + [0, 4, 7, 12, 7, 4, 7, 11][s % 8];
+    if (s % 2 === 1) osc('square', mtof(n), t, d * 0.6, 0.03, music, { lp: 2600, rel: 0.04, wet: 1 });
   } };
   function ep(n, t, dur, v) { osc('sine', mtof(n), t, dur, v, music, { a: 0.008, rel: 0.25 }); osc('sine', mtof(n) * 2.01, t, dur * 0.3, v * 0.3, music, { rel: 0.1 }); }
   function bass(n, t, dur) { osc('triangle', mtof(n), t, dur, 0.2, music, { rel: 0.06 }); osc('sine', mtof(n - 12), t, dur, 0.12, music, { rel: 0.06 }); }

@@ -66,6 +66,23 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
 .w-steer{flex:1;height:12px;border-radius:6px;background:#c9cdd1;position:relative;overflow:hidden}
 .w-steer i{position:absolute;top:0;bottom:0;left:50%;width:6px;margin-left:-3px;background:#1b9fd6;border-radius:3px}
 .wheel button.down{transform:translateY(4px);box-shadow:none}
+.pad{position:fixed;inset:0;display:none;flex-direction:column;background:linear-gradient(#fdf6e3,#f3e2b8);z-index:4;padding:max(12px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom))}
+.pad.on{display:flex}
+.pad-head{border-radius:22px;color:#fff;font-weight:900;font-size:20px;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 0 rgba(0,0,0,.15)}
+.pad-hint{text-align:center;font-weight:800;color:#7a5a2a;font-size:17px;margin:12px 6px;min-height:1.3em;line-height:1.35}
+.pad-body{flex:1;display:flex;flex-direction:column;gap:14px;justify-content:center;align-items:center;min-height:0}
+.pad button{border:0;font:900 24px Nunito,sans-serif;color:#fff;border-radius:26px;box-shadow:0 6px 0 rgba(0,0,0,.2)}
+.pad button.down{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.pad-btns{display:flex;gap:14px;width:100%;justify-content:center;flex-wrap:wrap}
+.pad-btns button{flex:1 1 40%;min-height:96px;max-width:100%}
+.pad-quiz{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;flex:1;max-height:62vh}
+.pad-quiz button{font-size:20px;padding:10px;line-height:1.2}
+.pad-dpad{position:relative;width:min(56vw,220px);aspect-ratio:1}
+.pad-dpad button{position:absolute;background:linear-gradient(#5c6064,#3d4145);font-size:22px;box-shadow:0 4px 0 #222;border-radius:14px}
+.pad-dpad .u,.pad-dpad .d{left:33%;width:34%;height:36%}.pad-dpad .u{top:0}.pad-dpad .d{bottom:0}
+.pad-dpad .l,.pad-dpad .r{top:33%;height:34%;width:36%}.pad-dpad .l{left:0}.pad-dpad .r{right:0}
+.pad-shake{width:min(60vw,240px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff,#ffe7a8);border:8px solid #f0b72f;display:grid;place-items:center;font-weight:900;font-size:24px;color:#a8741a;transition:transform .08s}
+.pad-foot{display:flex;justify-content:center;margin-top:10px}
 </style>
 </head>
 <body>
@@ -97,6 +114,7 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
   </div>
   <button class="w-gas" data-b="GAS">GAS</button>
 </div>
+<div class="pad" id="pad"></div>
 <div class="sheet" id="sheet">
   <label>Links und rechts vertauschen <input type="checkbox" id="o-ix"></label>
   <label>Oben und unten vertauschen <input type="checkbox" id="o-iy"></label>
@@ -124,7 +142,8 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
   const params = new URLSearchParams(location.search);
   $('code').value = (params.get('c') || localStorage.getItem('kk-last') || '').toUpperCase();
 
-  let peer = null, conn = null, motionOn = false, wake = null, player = 0, mode = 'pointer';
+  let peer = null, conn = null, motionOn = false, wake = null, player = 0, mode = 'pointer', padCfg = null;
+  const PCOL = { 1: '#1b9fd6', 2: '#e5242f', 3: '#2eaa4f', 4: '#f0a500' };
   const setState = (t, on) => { $('state').textContent = t; $('led').classList.toggle('on', !!on); };
   const send = o => { if (conn && conn.open) try { conn.send(o); } catch (e) {} };
 
@@ -156,10 +175,10 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
       c.on('data', d => {
         if (!d) return;
         if (d.t === 'screen' && mode === 'pointer') setState((player ? 'Spieler ' + player + ' · ' : '') + (d.ch ? d.ch : 'Verbunden'), true);
-        else if (d.t === 'player') { player = d.n; $('led').style.background = player === 2 ? '#e5242f' : ''; setState('Spieler ' + player + ' verbunden', true); }
-        else if (d.t === 'mode') setMode(d.m);
+        else if (d.t === 'player') { player = d.n; $('led').style.background = PCOL[player] || ''; setState('Spieler ' + player + ' verbunden', true); }
+        else if (d.t === 'mode') setMode(d.m, d.cfg);
         else if (d.t === 'hud') $('w-info').innerHTML = '<b>' + d.pos + '.</b> Platz · Runde ' + d.lap + '<br>' + (d.item ? 'Item: ' + d.item : '&nbsp;');
-        else if (d.t === 'full') $('msg').textContent = 'Es sind schon zwei Fernbedienungen verbunden.';
+        else if (d.t === 'full') $('msg').textContent = 'Es sind schon vier Fernbedienungen verbunden.';
       });
       c.on('close', () => { conn = null; setState('Getrennt', false); $('over').classList.remove('hide'); $('msg').textContent = 'Verbindung verloren. Nochmal verbinden?'; });
       c.on('error', () => {});
@@ -226,19 +245,59 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
     w.classList.toggle('rot', portrait);
     w.style.transform = 'translate(-50%,-50%)' + (portrait ? (gam < 0 ? ' rotate(90deg)' : ' rotate(-90deg)') : '');
   }, 33);
-  function setMode(m) {
-    mode = m; $('wheel').classList.toggle('on', m === 'wheel'); $('remote').style.visibility = m === 'wheel' ? 'hidden' : '';
-    $('opt').style.display = m === 'wheel' ? 'none' : '';
+  function setMode(m, cfg) {
     document.querySelectorAll('button.down').forEach(b => { b.classList.remove('down'); send({ t: 'b', b: b.dataset.b, d: 0 }); });
+    mode = m; padCfg = m === 'pad' ? (cfg || {}) : null;
+    $('wheel').classList.toggle('on', m === 'wheel'); $('pad').classList.toggle('on', m === 'pad');
+    $('remote').style.visibility = m === 'pointer' ? '' : 'hidden';
+    $('opt').style.display = m === 'pointer' ? '' : 'none';
+    if (m === 'pad') renderPad(padCfg);
   }
+  // ---------- Spielfeld-Modus: Tasten, Quiz, Schütteln, Neigen ----------
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let tb0 = null, tg0 = null, tb = 0, tg = 0, shakeE = 0, shakePeak = 0;
+  function renderPad(c) {
+    const col = PCOL[player] || '#1b9fd6';
+    const qc = ['#e5242f', '#1b9fd6', '#2eaa4f', '#f0a500'];
+    let body = '';
+    if (c.shake) body += '<div class="pad-shake" id="pad-sh">Schütteln!</div>';
+    if (c.quiz) body += '<div class="pad-quiz">' + (c.labels || ['A', 'B', 'C', 'D']).map((l, i) => `<button data-b="Q${i + 1}" style="background:${qc[i]}">${esc(l)}</button>`).join('') + '</div>';
+    if (c.dpad) body += '<div class="pad-dpad"><button class="u" data-b="UP">▲</button><button class="d" data-b="DOWN">▼</button><button class="l" data-b="LEFT">◀</button><button class="r" data-b="RIGHT">▶</button></div>';
+    if (c.buttons && c.buttons.length) body += '<div class="pad-btns">' + c.buttons.map(b => `<button data-b="${esc(b.b)}" style="background:${b.color || col}">${esc(b.label)}</button>`).join('') + '</div>';
+    $('pad').innerHTML = `<div class="pad-head" style="background:${col}"><span>Spieler ${player}</span><span>${esc(c.title || '')}</span></div><div class="pad-hint">${esc(c.hint || '')}</div><div class="pad-body">${body}</div>
+      <div class="pad-foot"><button class="home" data-b="HOME" aria-label="Home" style="box-shadow:0 4px 0 #c4c8cc"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 11 L12 3 L21 11 V21 H14 V14 H10 V21 H3Z" fill="#1b9fd6"/></svg></button></div>`;
+    $('pad').querySelectorAll('[data-b]').forEach(bindBtn);
+    tb0 = tg0 = null;
+  }
+  addEventListener('deviceorientation', e => { if (e.beta == null) return; tb = e.beta; tg = e.gamma || 0; if (padCfg && padCfg.tilt && tb0 == null) { tb0 = tb; tg0 = tg; } });
+  addEventListener('devicemotion', e => {
+    if (!padCfg || !padCfg.shake) return;
+    const a = e.acceleration; let m;
+    if (a && a.x != null) m = Math.hypot(a.x, a.y, a.z);
+    else { const g = e.accelerationIncludingGravity; if (!g || g.x == null) return; m = Math.abs(Math.hypot(g.x, g.y, g.z) - 9.81); }
+    shakePeak = Math.max(shakePeak, m);
+  });
+  setInterval(() => {
+    if (mode !== 'pad' || !padCfg) return;
+    if (padCfg.shake) {
+      shakeE = shakeE * 0.6 + shakePeak * 0.4; send({ t: 'sh', e: +shakePeak.toFixed(2) }); shakePeak = 0;
+      const el = $('pad-sh'); if (el) el.style.transform = `scale(${1 + Math.min(0.25, shakeE / 60)}) rotate(${Math.min(12, shakeE) * (Math.random() - 0.5)}deg)`;
+    }
+    if (padCfg.tilt && tb0 != null) {
+      let x = Math.max(-1, Math.min(1, (tg - tg0) / 25)), y = Math.max(-1, Math.min(1, (tb - tb0) / 25));
+      if (opt.ix) x = -x; if (opt.iy) y = -y;
+      send({ t: 'tl', x: +x.toFixed(3), y: +y.toFixed(3) });
+    }
+  }, 50);
 
   // ---------- Tasten ----------
-  document.querySelectorAll('[data-b]').forEach(b => {
+  function bindBtn(b) {
     const name = b.dataset.b;
     const down = e => { e.preventDefault(); b.classList.add('down'); send({ t: 'b', b: name, d: 1 }); };
     const upH = e => { e.preventDefault(); if (!b.classList.contains('down')) return; b.classList.remove('down'); send({ t: 'b', b: name, d: 0 }); };
     b.addEventListener('pointerdown', down); b.addEventListener('pointerup', upH); b.addEventListener('pointercancel', upH); b.addEventListener('pointerleave', upH);
-  });
+  }
+  document.querySelectorAll('[data-b]').forEach(bindBtn);
   $('center').addEventListener('click', () => send({ t: 'c' }));
 
   // ---------- Optionen ----------
