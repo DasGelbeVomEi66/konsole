@@ -43,3 +43,9 @@ Tastatur am Laptop: Esc = HOME, Leertaste = A, Rücktaste = B, Pfeile bewegen de
 - Felder: Plus, Minus, Ereignis, Glück, Pech, Laden, Duell. Gegenstände: Doppelwürfel, Dreifachwürfel, Klauhand, Kompassmuschel, Tauschmuschel, Fallennetz.
 - Nach jeder Runde ein Minispiel (jeder gegen jeden, 2 gegen 2 oder 1 gegen 3, je nach Feldfarben). 14 Minispiele, davon 2 mit Allgemeinwissen.
 - Die letzten 5 Runden sind der Endspurt, am Ende gibt es 3 Bonus-Sterne.
+
+## Casino-Kanal
+
+- Sonnen-Slots: Spielautomat mit 3 Walzen und 5 Gewinnlinien. Einsatz am Handy mit + und −, drehen durch Schütteln oder Tippen.
+- Blackjack für 1 bis 4 Spieler gegen die Bank: Karte, Halten, Verdoppeln, Teilen. Blackjack zahlt 3 zu 2, die Bank steht ab 17.
+- Gespielt wird nur mit Spielchips ohne echten Wert. Jedes Handy hat ein eigenes Chip-Konto, das im Browser gespeichert wird.

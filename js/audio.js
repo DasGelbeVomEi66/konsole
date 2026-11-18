@@ -95,6 +95,10 @@ const Sound = (() => {
     buzz() { const t = ctx.currentTime; osc('sawtooth', 110, t, 0.35, 0.12, sfx, { lp: 800 }); },
     splash() { const t = ctx.currentTime; noise(t, 0.5, 0.35, sfx, { type: 'lowpass', f: 2500, to: 300 }); },
     pop() { const t = ctx.currentTime; osc('sine', 300, t, 0.08, 0.25, sfx, { to: 900, glide: 0.06 }); },
+    card() { const t = ctx.currentTime; noise(t, 0.06, 0.25, sfx, { type: 'highpass', f: 2500, to: 5000 }); },
+    chip() { const t = ctx.currentTime; osc('sine', 2400, t, 0.03, 0.12, sfx); osc('sine', 3100, t + 0.03, 0.04, 0.1, sfx); },
+    reel() { const t = ctx.currentTime; osc('square', 220, t, 0.05, 0.12, sfx, { lp: 1200 }); noise(t, 0.05, 0.2, sfx, { type: 'lowpass', f: 800 }); },
+    jackpot() { const t = ctx.currentTime; for (let i = 0; i < 16; i++) osc('square', mtof([72, 76, 79, 84][i % 4] + (i > 7 ? 12 : 0)), t + i * 0.07, 0.08, 0.07, sfx, { lp: 4000, wet: 1 }); },
     bump() { const t = ctx.currentTime; osc('sine', 140, t, 0.08, 0.3, sfx, { to: 60 }); },
   };
 
