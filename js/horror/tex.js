@@ -394,3 +394,163 @@ export function bloodTexture() {
   for (let i = 0; i < 20; i++) { x.fillStyle = 'rgba(45,3,3,.8)'; x.beginPath(); x.arc(128 + R(-110, 110), 128 + R(-110, 110), R(1, 5), 0, TAU); x.fill(); }
   const t = toTex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
 }
+
+// ================= Labor-Texturen =================
+function pack(c, h, rough, ns = 2.5, rep) {
+  const o = { map: toTex(c, rep) };
+  if (h) o.normalMap = toTex(normalMap(h, ns), rep, false);
+  if (rough) o.roughnessMap = toTex(rough, rep, false);
+  return o;
+}
+function roughFrom(c, base, var_, wet) {
+  const r = cv(256, 256), x = r.getContext('2d'); x.fillStyle = `rgb(${base},${base},${base})`; x.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 40; i++) stain(x, R(0, 256), R(0, 256), R(10, 60), 'rgba(255,255,255,A)', R(0, var_));
+  for (let i = 0; i < (wet || 0); i++) stain(x, R(0, 256), R(0, 256), R(15, 70), 'rgba(0,0,0,A)', R(0.4, 0.9));
+  grain(r, 0.15); return r;
+}
+// Beton (Wände Lager, Generator, Treppenhaus)
+export function concreteTex() {
+  const S = 512, c = cv(S, S), h = cv(S, S), x = c.getContext('2d'), hx = h.getContext('2d');
+  x.fillStyle = '#6a6862'; x.fillRect(0, 0, S, S); hx.fillStyle = '#808080'; hx.fillRect(0, 0, S, S);
+  grain(c, 0.35, 0.6, 'fbm');
+  for (let i = 0; i < 400; i++) { const px = R(0, S), py = R(0, S), r = R(0.5, 2.5); x.fillStyle = `rgba(30,30,28,${R(0.2, 0.6)})`; x.beginPath(); x.arc(px, py, r, 0, TAU); x.fill(); hx.fillStyle = '#404040'; hx.beginPath(); hx.arc(px, py, r, 0, TAU); hx.fill(); }
+  // Schalungsfugen
+  for (const y of [S / 2]) { x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(0, y - 2, S, 4); hx.fillStyle = '#303030'; hx.fillRect(0, y - 2, S, 4); }
+  for (const [px, py] of [[S * 0.25, S * 0.25], [S * 0.75, S * 0.25], [S * 0.25, S * 0.75], [S * 0.75, S * 0.75]]) { x.fillStyle = 'rgba(0,0,0,.5)'; x.beginPath(); x.arc(px, py, 5, 0, TAU); x.fill(); hx.fillStyle = '#202020'; hx.beginPath(); hx.arc(px, py, 5, 0, TAU); hx.fill(); }
+  for (let i = 0; i < 8; i++) { const sx = R(0, S), len = R(100, 400); const g = x.createLinearGradient(0, 0, 0, len); g.addColorStop(0, 'rgba(30,25,15,.4)'); g.addColorStop(1, 'rgba(30,25,15,0)'); x.fillStyle = g; x.fillRect(sx, 0, R(6, 30), len); }
+  for (let i = 0; i < 20; i++) stain(x, R(0, S), R(0, S), R(30, 120), 'rgba(20,18,12,A)', R(0.1, 0.3));
+  hx.filter = 'blur(1px)'; hx.drawImage(h, 0, 0); hx.filter = 'none';
+  return pack(c, h, roughFrom(c, 220, 0.1), 2);
+}
+// Laborwand: helle Paneele mit Fugen, unten Schmutz, Schrauben
+export function panelTex(tint = [178, 182, 178], dirty = 1) {
+  const W = 512, Hh = 768, c = cv(W, Hh), h = cv(W, Hh), x = c.getContext('2d'), hx = h.getContext('2d'); // 2 m breit, 3 m hoch
+  x.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`; x.fillRect(0, 0, W, Hh); hx.fillStyle = '#909090'; hx.fillRect(0, 0, W, Hh);
+  grain(c, 0.08, 1, 'fbm');
+  const rows = [0, 0.33, 0.8, 1], cols = [0, 0.5, 1];
+  for (let i = 0; i < cols.length - 1; i++) for (let j = 0; j < rows.length - 1; j++) {
+    const x0 = cols[i] * W, x1 = cols[i + 1] * W, y0 = rows[j] * Hh, y1 = rows[j + 1] * Hh;
+    const k = R(0.94, 1.04); x.fillStyle = `rgba(${k > 1 ? 255 : 0},${k > 1 ? 255 : 0},${k > 1 ? 255 : 0},${Math.abs(1 - k) * 1.5})`; x.fillRect(x0, y0, x1 - x0, y1 - y0);
+    x.strokeStyle = 'rgba(0,0,0,.55)'; x.lineWidth = 4; x.strokeRect(x0 + 2, y0 + 2, x1 - x0 - 4, y1 - y0 - 4);
+    x.strokeStyle = 'rgba(255,255,255,.18)'; x.lineWidth = 1.5; x.strokeRect(x0 + 5, y0 + 5, x1 - x0 - 10, y1 - y0 - 10);
+    hx.fillStyle = '#404040'; hx.fillRect(x0, y0, x1 - x0, y1 - y0); hx.fillStyle = '#a0a0a0'; hx.fillRect(x0 + 5, y0 + 5, x1 - x0 - 10, y1 - y0 - 10);
+    for (const [sx, sy] of [[x0 + 14, y0 + 14], [x1 - 14, y0 + 14], [x0 + 14, y1 - 14], [x1 - 14, y1 - 14]]) { x.fillStyle = 'rgba(60,60,60,.8)'; x.beginPath(); x.arc(sx, sy, 3.5, 0, TAU); x.fill(); hx.fillStyle = '#e0e0e0'; hx.beginPath(); hx.arc(sx, sy, 3.5, 0, TAU); hx.fill(); }
+  }
+  // Sockelleiste
+  x.fillStyle = '#3a3c3c'; x.fillRect(0, Hh - 34, W, 34); hx.fillStyle = '#c0c0c0'; hx.fillRect(0, Hh - 34, W, 34);
+  // Schmutz und Rost
+  const gd = x.createLinearGradient(0, Hh * 0.6, 0, Hh); gd.addColorStop(0, 'rgba(30,26,18,0)'); gd.addColorStop(1, `rgba(30,26,18,${0.55 * dirty})`); x.fillStyle = gd; x.fillRect(0, Hh * 0.6, W, Hh * 0.4);
+  for (let i = 0; i < 18 * dirty; i++) stain(x, R(0, W), R(0, Hh), R(20, 110), 'rgba(40,32,18,A)', R(0.06, 0.25));
+  for (let i = 0; i < 5 * dirty; i++) { const sx = R(0, W), len = R(80, 500), g = x.createLinearGradient(0, 0, 0, len); g.addColorStop(0, 'rgba(70,40,15,.45)'); g.addColorStop(1, 'rgba(70,40,15,0)'); x.fillStyle = g; x.fillRect(sx, R(0, Hh * 0.3), R(2, 10), len); }
+  hx.filter = 'blur(1.2px)'; hx.drawImage(h, 0, 0); hx.filter = 'none';
+  return pack(c, h, roughFrom(c, 120, 0.25), 2.5);
+}
+// Bodenfliesen
+export function floorTileTex(col = [150, 152, 148], size = 8, grout = '#2a2a26', wet = 6) {
+  const S = 512, c = cv(S, S), h = cv(S, S), x = c.getContext('2d'), hx = h.getContext('2d');
+  x.fillStyle = grout; x.fillRect(0, 0, S, S); hx.fillStyle = '#202020'; hx.fillRect(0, 0, S, S);
+  const ts = S / size;
+  for (let i = 0; i < size; i++) for (let j = 0; j < size; j++) {
+    const k = R(0.88, 1.06); x.fillStyle = `rgb(${col[0] * k},${col[1] * k},${col[2] * k})`; x.fillRect(i * ts + 2, j * ts + 2, ts - 4, ts - 4);
+    hx.fillStyle = `rgb(${R(175, 200)},0,0)`; hx.fillRect(i * ts + 3, j * ts + 3, ts - 6, ts - 6);
+    if (rand() < 0.08) { x.strokeStyle = 'rgba(0,0,0,.5)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(i * ts + R(0, ts), j * ts); x.lineTo(i * ts + R(0, ts), j * ts + R(ts * 0.5, ts)); x.stroke(); }
+  }
+  { const id = hx.getImageData(0, 0, S, S), d = id.data; for (let i = 0; i < d.length; i += 4) d[i + 1] = d[i + 2] = d[i]; hx.putImageData(id, 0, 0); }
+  grain(c, 0.25, 0.8, 'fbm');
+  for (let i = 0; i < 30; i++) stain(x, R(0, S), R(0, S), R(20, 120), 'rgba(25,22,15,A)', R(0.08, 0.35));
+  hx.filter = 'blur(1px)'; hx.drawImage(h, 0, 0); hx.filter = 'none';
+  return pack(c, h, roughFrom(c, 150, 0.15, wet), 2);
+}
+export function carpetTex() {
+  const S = 256, c = cv(S, S), x = c.getContext('2d'); x.fillStyle = '#2c3038'; x.fillRect(0, 0, S, S);
+  grain(c, 0.5); grain(c, 0.3, 0.4, 'fbm');
+  for (let i = 0; i < 12; i++) stain(x, R(0, S), R(0, S), R(10, 60), 'rgba(10,8,5,A)', R(0.2, 0.5));
+  return { map: toTex(c) };
+}
+export function grateTex() {
+  const S = 256, c = cv(S, S), x = c.getContext('2d'); x.fillStyle = '#111'; x.fillRect(0, 0, S, S);
+  for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { x.fillStyle = `rgb(${R(70, 95)},${R(70, 90)},${R(65, 85)})`; x.fillRect(i * 16 + 1, j * 16 + 1, 14, 3); x.fillRect(i * 16 + 1, j * 16 + 9, 14, 3); }
+  for (let i = 0; i < 10; i++) stain(x, R(0, S), R(0, S), R(10, 50), 'rgba(80,40,10,A)', R(0.2, 0.5));
+  const a = cv(S, S), ax = a.getContext('2d'); ax.fillStyle = '#000'; ax.fillRect(0, 0, S, S); ax.fillStyle = '#fff';
+  for (let i = 0; i < 16; i++) for (let j = 0; j < 16; j++) { ax.fillRect(i * 16 + 1, j * 16 + 1, 14, 3); ax.fillRect(i * 16 + 1, j * 16 + 9, 14, 3); ax.fillRect(i * 16, j * 16, 1, 16); }
+  return { map: toTex(c), alphaMap: toTex(a, null, false) };
+}
+export function ceilTileTex() {
+  const S = 256, c = cv(S, S), h = cv(S, S), x = c.getContext('2d'), hx = h.getContext('2d');
+  x.fillStyle = '#9a9a94'; x.fillRect(0, 0, S, S); hx.fillStyle = '#a0a0a0'; hx.fillRect(0, 0, S, S);
+  grain(c, 0.3);
+  x.strokeStyle = '#505048'; x.lineWidth = 6; x.strokeRect(0, 0, S, S); hx.strokeStyle = '#303030'; hx.lineWidth = 6; hx.strokeRect(0, 0, S, S);
+  for (let i = 0; i < 6; i++) stain(x, R(0, S), R(0, S), R(10, 80), 'rgba(80,60,20,A)', R(0.1, 0.45));
+  return pack(c, h, null, 2);
+}
+export function lockerTex() {
+  const W = 128, Hh = 512, c = cv(W, Hh), h = cv(W, Hh), x = c.getContext('2d'), hx = h.getContext('2d');
+  x.fillStyle = '#3e5058'; x.fillRect(0, 0, W, Hh); hx.fillStyle = '#808080'; hx.fillRect(0, 0, W, Hh);
+  grain(c, 0.12, 1, 'fbm');
+  for (const y0 of [40, Hh - 120]) for (let i = 0; i < 6; i++) { const y = y0 + i * 12; x.fillStyle = '#0a0c0e'; x.fillRect(28, y, W - 56, 5); x.fillStyle = 'rgba(255,255,255,.2)'; x.fillRect(28, y + 5, W - 56, 1.5); hx.fillStyle = '#202020'; hx.fillRect(28, y, W - 56, 5); }
+  x.strokeStyle = 'rgba(0,0,0,.5)'; x.lineWidth = 4; x.strokeRect(4, 4, W - 8, Hh - 8); hx.strokeStyle = '#d0d0d0'; hx.lineWidth = 4; hx.strokeRect(6, 6, W - 12, Hh - 12);
+  x.fillStyle = '#aaa'; x.fillRect(W - 26, Hh / 2 - 30, 8, 60); x.fillStyle = '#d8d0b0'; x.fillRect(36, 150, 56, 22); x.fillStyle = '#333'; x.font = 'bold 14px monospace'; x.fillText(String(Math.floor(R(10, 99))), 52, 166);
+  for (let i = 0; i < 6; i++) stain(x, R(0, W), R(0, Hh), R(10, 50), 'rgba(80,50,20,A)', R(0.1, 0.4));
+  const r = roughFrom(c, 110, 0.3);
+  return pack(c, h, r, 2);
+}
+export function screenTex(kind, seedv = 0) {
+  const W = 256, Hh = 160, c = cv(W, Hh), x = c.getContext('2d');
+  x.fillStyle = kind === 'cctv' ? '#0b1410' : '#03100a'; x.fillRect(0, 0, W, Hh);
+  if (kind === 'cctv') {
+    // Überwachungsbild: Gang in Grautönen
+    const g = x.createLinearGradient(0, 0, 0, Hh); g.addColorStop(0, '#1a2420'); g.addColorStop(1, '#2a3a32'); x.fillStyle = g; x.fillRect(0, 0, W, Hh);
+    x.fillStyle = '#0a100c'; x.beginPath(); x.moveTo(W * 0.4, Hh * 0.35); x.lineTo(W * 0.6, Hh * 0.35); x.lineTo(W * 0.6, Hh * 0.7); x.lineTo(W * 0.4, Hh * 0.7); x.fill();
+    x.strokeStyle = '#3a5046'; x.beginPath(); x.moveTo(0, 0); x.lineTo(W * 0.4, Hh * 0.35); x.moveTo(W, 0); x.lineTo(W * 0.6, Hh * 0.35); x.moveTo(0, Hh); x.lineTo(W * 0.4, Hh * 0.7); x.moveTo(W, Hh); x.lineTo(W * 0.6, Hh * 0.7); x.stroke();
+    if (seedv % 3 === 1) { x.fillStyle = '#050805'; x.beginPath(); x.ellipse(W * 0.52, Hh * 0.62, 14, 8, 0, 0, TAU); x.fill(); x.fillRect(W * 0.56, Hh * 0.5, 4, 10); }
+    x.fillStyle = '#9fe0b0'; x.font = '12px monospace'; x.fillText('KAM ' + (seedv + 1) + '  REC', 8, 16); x.fillText('03:4' + seedv + ':12', W - 74, Hh - 8);
+    for (let y = 0; y < Hh; y += 3) { x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(0, y, W, 1); }
+  } else {
+    x.fillStyle = '#3dff8a'; x.font = '11px monospace';
+    const L = ['LINDHOLM BIOSYS v4.2', '> STATUS GEHEGE B ... OFFEN', '> K-7 ... NICHT GEFUNDEN', '> K-9 ... NICHT GEFUNDEN', '> STROM: NOTBETRIEB', '> TEMP 31.4 C', '> FEHLER 0x7F2A', '_'];
+    L.forEach((l, i) => { x.globalAlpha = 0.6 + rand() * 0.4; x.fillText(l, 8, 18 + i * 17); }); x.globalAlpha = 1;
+    for (let y = 0; y < Hh; y += 2) { x.fillStyle = 'rgba(0,0,0,.2)'; x.fillRect(0, y, W, 1); }
+  }
+  return toTex(c);
+}
+export function cardboardTex() {
+  const S = 256, c = cv(S, S), x = c.getContext('2d'); x.fillStyle = '#8a6a44'; x.fillRect(0, 0, S, S); grain(c, 0.2, 0.5, 'fbm');
+  x.fillStyle = '#5a4026'; x.fillRect(0, S / 2 - 12, S, 24); x.fillStyle = 'rgba(30,20,10,.7)'; x.font = 'bold 22px Arial'; x.fillText('PROBEN', 30, 70); x.fillText('↑↑', 190, 220);
+  return { map: toTex(c) };
+}
+export function stripeTex() {
+  const S = 256, c = cv(S, 64), x = c.getContext('2d'); x.fillStyle = '#d4a812'; x.fillRect(0, 0, S, 64);
+  x.fillStyle = '#141414'; for (let i = -2; i < 10; i++) { x.beginPath(); x.moveTo(i * 32, 64); x.lineTo(i * 32 + 16, 64); x.lineTo(i * 32 + 48, 0); x.lineTo(i * 32 + 32, 0); x.fill(); }
+  grain(c, 0.3); for (let i = 0; i < 8; i++) stain(x, R(0, S), R(0, 64), R(5, 30), 'rgba(20,15,10,A)', R(0.3, 0.6));
+  return toTex(c);
+}
+export function labelTex(text, bg = '#d8dcd8', fg = '#1a1c1c', w = 512, h = 128) {
+  const c = cv(w, h), x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, w, h);
+  x.fillStyle = fg; x.font = `bold ${Math.round(Math.min(h * 0.5, w / text.length * 1.45))}px Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, w / 2, h / 2 + 3);
+  x.strokeStyle = fg; x.lineWidth = 4; x.strokeRect(6, 6, w - 12, h - 12);
+  grain(c, 0.1); for (let i = 0; i < 5; i++) stain(x, R(0, w), R(0, h), R(10, 50), 'rgba(40,30,15,A)', R(0.1, 0.3));
+  return toTex(c);
+}
+export function liquidTex() {
+  const S = 128, c = cv(S, S), x = c.getContext('2d'); const g = x.createLinearGradient(0, 0, 0, S); g.addColorStop(0, '#6aff9a'); g.addColorStop(1, '#0a5a30'); x.fillStyle = g; x.fillRect(0, 0, S, S);
+  for (let i = 0; i < 40; i++) { x.strokeStyle = `rgba(200,255,220,${R(0.1, 0.4)})`; x.beginPath(); x.arc(R(0, S), R(0, S), R(1, 4), 0, TAU); x.stroke(); }
+  return toTex(c);
+}
+export function soilTex() {
+  const S = 256, c = cv(S, S), x = c.getContext('2d'); x.fillStyle = '#2a2216'; x.fillRect(0, 0, S, S); grain(c, 0.5, 0.5, 'fbm'); grain(c, 0.3);
+  for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${R(20, 60)},${R(40, 70)},${R(10, 30)},.6)`; x.beginPath(); x.arc(R(0, S), R(0, S), R(2, 8), 0, TAU); x.fill(); }
+  return { map: toTex(c) };
+}
+// Fluchtplan aus dem Raster
+export function mapCanvas(grid, rooms, you, extra) {
+  const cs = 16, W = grid[0].length * cs + 40, Hh = grid.length * cs + 90, c = cv(W, Hh), x = c.getContext('2d');
+  x.fillStyle = '#e8e4d4'; x.fillRect(0, 0, W, Hh);
+  x.fillStyle = '#1a6a2a'; x.fillRect(0, 0, W, 50); x.fillStyle = '#fff'; x.font = 'bold 26px Arial'; x.fillText('FLUCHTPLAN  EBENE -3', 20, 34);
+  const col = { c: '#c8c4b4', l: '#d8e0e0', v: '#c0c8d0', o: '#d8d0c0', u: '#d0d8d0', x: '#9ad0a0', h: '#d8d4c8', e: '#b0b0b0', g: '#e0c8a0', s: '#d8c8a8', k: '#e0d8c0', m: '#a8a49a', b: '#7a9a6a', d: '#c8c4b4', r: '#e08070', X: '#4ac060', w: '#8ab0d0' };
+  for (let r = 0; r < grid.length; r++) for (let q = 0; q < grid[0].length; q++) { const ch = grid[r][q]; if (col[ch]) { x.fillStyle = col[ch]; x.fillRect(20 + q * cs, 60 + r * cs, cs, cs); } }
+  x.fillStyle = '#222'; x.font = 'bold 11px Arial'; x.textAlign = 'center';
+  for (const rm of rooms) x.fillText(rm.name, 20 + rm.c * cs, 60 + rm.r * cs);
+  if (you) { x.fillStyle = '#d01010'; x.beginPath(); x.arc(20 + you.c * cs, 60 + you.r * cs, 6, 0, TAU); x.fill(); x.fillText('Sie sind hier', 20 + you.c * cs, 60 + you.r * cs - 10); }
+  x.textAlign = 'left'; x.fillStyle = '#333'; x.font = '13px Arial'; x.fillText(extra || '', 20, Hh - 12);
+  return c;
+}

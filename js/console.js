@@ -241,6 +241,8 @@ if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D
   // ---------- Ereignisse ----------
   $('power').addEventListener('click', () => {
     Sound.init(); Sound.play('boot'); show('boot');
+    // Wurde per Handy eingeschaltet, blockiert Safari den Ton bis zur ersten Berührung
+    setTimeout(() => { if (!Sound.running) toast('Kein Ton? Einmal auf diesen Bildschirm tippen oder klicken.', 6000); }, 1500);
     setTimeout(() => { if (conns.size) { show('menu'); } else showPair('boot'); Sound.music('menu'); }, 2400);
   });
   $('pair-skip').addEventListener('click', leavePair);

@@ -6,8 +6,29 @@ const Sound = (() => {
   const save = () => { try { localStorage.setItem('kk-sound', JSON.stringify(s)); } catch (e) {} };
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 
+  // iPhone/iPad: Ton startet nur nach einer Berührung des Bildschirms. Ein stummes Audio-Element schaltet
+  // außerdem auf "Wiedergabe", damit der Stummschalter von iOS den Ton nicht verschluckt.
+  let silentEl = null;
+  function unlock() {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    if (!silentEl) {
+      try {
+        const sr = 8000, n = sr / 2, b = new ArrayBuffer(44 + n * 2), v = new DataView(b), w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+        w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+        silentEl = new Audio(URL.createObjectURL(new Blob([b], { type: 'audio/wav' }))); silentEl.loop = true; silentEl.setAttribute('playsinline', ''); silentEl.volume = 0.01;
+      } catch (e) {}
+    }
+    try { silentEl && silentEl.paused && silentEl.play().catch(() => {}); } catch (e) {}
+    if (!ctx) init();
+    if (ctx && ctx.state !== 'running') { try { ctx.resume(); } catch (e) {} }
+    // kurzer leerer Puffer, damit iOS den Ausgang wirklich öffnet
+    try { const sb = ctx.createBufferSource(); sb.buffer = ctx.createBuffer(1, 1, 22050); sb.connect(ctx.destination); sb.start(0); } catch (e) {}
+  }
+  ['touchend', 'pointerdown', 'click', 'keydown'].forEach(ev => addEventListener(ev, unlock, { capture: true, passive: true }));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ctx && ctx.state !== 'running') try { ctx.resume(); } catch (e) {} });
+
   function init() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    if (ctx) { if (ctx.state !== 'running') try { ctx.resume(); } catch (e) {} return; }
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain(); master.gain.value = s.vol; master.connect(ctx.destination);
     music = ctx.createGain(); music.gain.value = s.music ? 0.55 : 0; music.connect(master);
@@ -198,6 +219,7 @@ const Sound = (() => {
 
   return {
     init, s,
+    get running() { return !!ctx && ctx.state === 'running'; },
     get ctx() { return ctx; }, get out() { return master; }, get verb() { return verb; },
     play(name, ...a) { if (ctx && fx[name]) try { fx[name](...a); } catch (e) {} },
     music: playMusic, stopMusic,

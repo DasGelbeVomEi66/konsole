@@ -107,6 +107,9 @@ export function makeAudio() {
       if (kind === 'buzz') { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 100; const b = filt('bandpass', 400, 3); L.g = gain(0.012); chain(o, b, L.g, p); o.start(); L.s = o; }
       if (kind === 'static') { const s = src(nb), b = filt('bandpass', 1800, 0.7); L.g = gain(0.05); const am = gain(1); chain(s, b, am, L.g, p); s.start(); L.s = s; L.tick = t => { if (Math.random() < 0.3) am.gain.setValueAtTime(0.3 + Math.random() * 0.9, t); }; }
       if (kind === 'clock') { L.next = now(); L.tick = t => { if (!L.on || L.stopped) return; while (L.next < t + 0.1) { burst(p, L.next, 0.02, 0.25, 'bandpass', 3200, 6); tone(p, 'sine', L.alt ? 1800 : 2100, L.next, 0.02, 0.06); L.alt = !L.alt; L.next += 1; } }; }
+      if (kind === 'steam') { const s2 = src(nb), hp = filt('highpass', 2500); L.g = gain(0.14); chain(s2, hp, L.g, p); s2.start(); L.s = s2; }
+      if (kind === 'hum') { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 120; const b = filt('bandpass', 240, 4); L.g = gain(0.02); chain(o, b, L.g, p); o.start(); L.s = o; const s2 = src(nb), b2 = filt('bandpass', 4000, 2), g2 = gain(0.008); chain(s2, b2, g2, p); s2.start(); }
+      if (kind === 'gen') { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 50; const b = filt('lowpass', 260); L.g = gain(0); chain(o, b, L.g, p); o.start(); L.s = o; }
       if (kind === 'rainfall') { const s = src(nb), hp = filt('highpass', 1500); L.g = gain(0.2); chain(s, hp, L.g, p); s.start(); L.s = s; }
       loops.push(L); return L;
     },
@@ -206,15 +209,36 @@ export function makeAudio() {
       burst(d, t, L, 0.25 * vol, 'bandpass', 600, 0.6, { a: L * 0.45, to: 3000 });
     },
     whoosh() { const t = now(); burst(dest(null), t, 0.5, 0.3, 'bandpass', 400, 1, { a: 0.2, to: 2000 }); },
-    // Stimme aus dem Radio oder vom Tier nachgeahmt (Sprachausgabe des Browsers)
-    say(text, opt = {}) {
-      try {
-        const s = window.speechSynthesis; if (!s) return; if (opt.cancel !== false) s.cancel();
-        const u = new SpeechSynthesisUtterance(text); u.lang = 'de-DE'; u.pitch = opt.pitch == null ? 0.6 : opt.pitch; u.rate = opt.rate || 0.88; u.volume = (opt.vol == null ? 0.8 : opt.vol) * (S.s ? S.s.vol : 1);
-        const v = s.getVoices().find(v => /de(-|_)/i.test(v.lang)); if (v) u.voice = v;
-        s.speak(u);
-      } catch (e) {}
+    say() {},
+    // nachgeahmte Stimme: zwei Formanten auf einer Sägezahnquelle, klingt wie ein verzerrtes "Hallo?"
+    mimic(pos, vol = 1) {
+      const t = now(), d = pos ? panner(pos, 1) : dest(null);
+      const o = ctx.createOscillator(); o.type = 'sawtooth';
+      o.frequency.setValueAtTime(150, t); o.frequency.linearRampToValueAtTime(175, t + 0.25); o.frequency.linearRampToValueAtTime(140, t + 0.35); o.frequency.linearRampToValueAtTime(205, t + 0.75); o.frequency.linearRampToValueAtTime(120, t + 1.0);
+      const vib = ctx.createOscillator(), vg = gain(9); vib.frequency.value = 7; vib.connect(vg); vg.connect(o.frequency); vib.start(t); vib.stop(t + 1.3);
+      const f1 = filt('bandpass', 800, 6), f2 = filt('bandpass', 1300, 8), g = gain(0);
+      f1.frequency.setValueAtTime(750, t); f1.frequency.linearRampToValueAtTime(450, t + 0.45); f1.frequency.linearRampToValueAtTime(500, t + 1);
+      f2.frequency.setValueAtTime(1250, t); f2.frequency.linearRampToValueAtTime(900, t + 0.45); f2.frequency.linearRampToValueAtTime(850, t + 1);
+      o.connect(f1); o.connect(f2); f1.connect(g); f2.connect(g); g.connect(d);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.5 * vol, t + 0.06); g.gain.linearRampToValueAtTime(0.15 * vol, t + 0.3); g.gain.linearRampToValueAtTime(0.5 * vol, t + 0.42); g.gain.linearRampToValueAtTime(0.35 * vol, t + 0.9); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.15);
+      o.start(t); o.stop(t + 1.3);
+      burst(d, t, 0.25, 0.12 * vol, 'highpass', 3000, 0.7, { a: 0.02 });
     },
+    chime() { const t = now(), d = dest(null); [[784, 0], [659, 0.35], [523, 0.7]].forEach(([f, dt]) => { tone(d, 'sine', f, t + dt, 0.9, 0.12, { a: 0.01 }); tone(d, 'sine', f * 2, t + dt, 0.4, 0.03); }); burst(d, t, 3, 0.02, 'bandpass', 1500, 0.5, { a: 0.1, hold: 2 }); },
+    slide(pos, open = true) { const t = now(), d = panner(pos, 1.5); burst(d, t, 0.6, 0.35, 'bandpass', open ? 500 : 400, 1.2, { a: 0.05, to: open ? 900 : 250 }); tone(d, 'sawtooth', 70, t, 0.6, 0.05, { lp: 300 }); burst(d, t + 0.55, 0.1, 0.4, 'lowpass', 300, 1, { brown: 1 }); },
+    locker(pos, open = true) { const t = now(), d = panner(pos, 1); burst(d, t, 0.05, 0.4, 'bandpass', 2200, 3); for (const f of [420, 690, 1130]) tone(d, 'sine', f * (open ? 1 : 0.9), t + 0.02, 0.35, 0.05); burst(d, t, 0.15, 0.3, 'lowpass', 400, 1, { brown: 1 }); },
+    spark(pos) { const t = now(), d = panner(pos, 0.8); for (let i = 0; i < 6; i++) burst(d, t + Math.random() * 0.25, 0.02 + Math.random() * 0.04, 0.5, 'highpass', 3000, 0.7); tone(d, 'square', 120, t, 0.2, 0.05, { lp: 2000 }); },
+    alarm(on) {
+      if (on && !A._al) {
+        const o = ctx.createOscillator(); o.type = 'square'; const f = filt('lowpass', 1400), g = gain(0); chain(o, f, g, bus); const r = gain(0.4); g.connect(r); r.connect(rev);
+        const lfo = ctx.createOscillator(), lg = gain(220); lfo.frequency.value = 0.55; lfo.connect(lg); lg.connect(o.frequency); o.frequency.value = 600; o.start(); lfo.start();
+        g.gain.setTargetAtTime(0.035, now(), 0.3); A._al = { o, lfo, g };
+      } else if (!on && A._al) { A._al.g.gain.setTargetAtTime(0, now(), 0.3); const a = A._al; setTimeout(() => { try { a.o.stop(); a.lfo.stop(); } catch (e) {} }, 1500); A._al = null; }
+    },
+    gasp() { const t = now(), d = dest(null); burst(d, t, 0.5, 0.5, 'bandpass', 900, 1.5, { a: 0.03 }); burst(d, t + 0.5, 0.8, 0.25, 'bandpass', 600, 1.2, { a: 0.1 }); },
+    breathe(vol) { const t = now(), d = dest(null); burst(d, t, 0.7, 0.07 * vol, 'bandpass', 700, 1.3, { a: 0.35 }); burst(d, t + 0.9, 0.9, 0.09 * vol, 'bandpass', 500, 1.3, { a: 0.1 }); },
+    rumble(vol = 1) { const t = now(); burst(dest(null), t, 3, 0.5 * vol, 'lowpass', 90, 1, { brown: 1, a: 0.5, hold: 1 }); },
+    screamFar(pos) { A.screech(pos, 0.35); },
     hush() { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} },
     duck(v, time = 0.3) { out.gain.setTargetAtTime(v, now(), time); },
     stop() {
