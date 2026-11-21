@@ -158,7 +158,7 @@ export function openHorror(box, K) {
   q('.hr-menu').innerHTML = '<div class="hr-load">Lädt …</div>'; q('.hr-fade').style.opacity = 0;
   let L = null, A = null, steamPts = null, sparkPts = null, dust = null;
   const P = { pos: new V3(), yaw: 0, pitch: 0, vel: new V3(), eyeK: 0, crouch: false, run: false, stamina: 1, bob: 0, lastStep: 0, lamp: true, lampWas: true, lampDir: new V3(0, 0, -1), moving: 0, hidden: null, breath: 1, holding: false, heavy: 0, yawTarget: null, pitchTarget: null };
-  const IN = { mx: 0, my: 0, mvT: 0, keys: {} };
+  const IN = { mx: 0, my: 0, mvT: 0, lx: 0, ly: 0, lkT: 0, keys: {} };
   let mode = 'load', gen = 0, gtime = 0, waits = [], items = [], note = null;
   const S = { tension: 0, fear: 0, fade: 1, fadeTarget: 0, fadeSpeed: 1.2, red: 0, shake: 0, power: false, stage: 0, card: false, fuse: false, fuseIn: false, goal: 0, rexSlam: false, noise: [], lit: 0 };
   const raptors = [];
@@ -173,8 +173,8 @@ export function openHorror(box, K) {
   function pa(key) { A.chime(); setTimeout(() => !closed && sub(PA[key], 9, true), 1200); }
 
   function phones(m) {
-    if (m === 'play') K.send({ t: 'mode', m: 'pad', cfg: { title: 'FOSSIL', dark: true, stick: true, look: true, hint: 'Handy wie eine Taschenlampe halten. Drehen = umsehen.', buttons: [{ b: 'USE', label: 'Benutzen', color: '#3d4145' }, { b: 'LAMP', label: 'Lampe', color: '#5a4a1a' }, { b: 'RUN', label: 'Rennen', color: '#3d4145' }, { b: 'CROUCH', label: 'Ducken', color: '#3d4145' }] } });
-    else if (m === 'hide') K.send({ t: 'mode', m: 'pad', cfg: { title: 'Im Spind', dark: true, look: true, hint: 'Gedrückt halten: Luft anhalten', buttons: [{ b: 'USE', label: 'Luft anhalten', color: '#2a3a4a' }, { b: 'EXIT', label: 'Raus', color: '#3d4145' }] } });
+    if (m === 'play') K.send({ t: 'mode', m: 'pad', cfg: { title: 'FOSSIL', dark: true, twin: true, buttons: [{ b: 'USE', label: 'Benutzen', color: '#3d4145' }, { b: 'LAMP', label: 'Lampe', color: '#5a4a1a' }, { b: 'RUN', label: 'Rennen', color: '#3d4145' }, { b: 'CROUCH', label: 'Ducken', color: '#3d4145' }] } });
+    else if (m === 'hide') K.send({ t: 'mode', m: 'pad', cfg: { title: 'Im Spind', dark: true, twin: true, buttons: [{ b: 'USE', label: 'Luft anhalten', color: '#2a3a4a' }, { b: 'EXIT', label: 'Raus', color: '#3d4145' }] } });
     else K.send({ t: 'mode', m: 'pointer' });
     if (cursorEl) cursorEl.style.visibility = (m === 'play' || m === 'hide') ? 'hidden' : '';
   }
@@ -473,9 +473,9 @@ export function openHorror(box, K) {
     const f = d.root.position.clone().sub(P.pos); f.y = 0; if (f.length() < 0.01) f.set(-Math.sin(P.yaw), 0, -Math.cos(P.yaw)); f.normalize();
     P.yawTarget = P.yaw + angDiff(Math.atan2(-f.x, -f.z), P.yaw); P.yaw += angDiff(P.yawTarget, P.yaw) * 0.6;
     d.root.position.copy(P.pos).addScaledVector(f, 2.0); d.root.rotation.y = Math.atan2(-f.x, -f.z);
-    const camY = 1.62 - P.eyeK * 0.68, hp = new V3(); d.lookAt = null; d.rear = 0; d.jawOpen = 1; d.agitation = 1; d.speed = 0; d.crouch = 0;
-    for (let i = 0; i < 14; i++) { d.update(0); d.head.getWorldPosition(hp); d.rear = clamp(d.rear + (camY - 0.12 - hp.y) * 0.8, -0.5, 1.2); }
-    d.update(0); d.head.getWorldPosition(hp); const hd = Math.hypot(hp.x - P.pos.x, hp.z - P.pos.z); d.root.position.addScaledVector(f, -(hd - 1.0));
+    const camY = 1.62 - P.eyeK * 0.68, hp = new V3(); d.lookAt = null; d.rear = 0; d.jawOpen = 0.8; d.agitation = 1; d.speed = 0; d.crouch = 0;
+    d.rear = 0.15;
+    d.update(0); d.head.getWorldPosition(hp); const hd = Math.hypot(hp.x - P.pos.x, hp.z - P.pos.z); d.root.position.addScaledVector(f, -(hd - 1.45));
     d.update(0); d.head.getWorldPosition(hp);
     P.pitchTarget = Math.atan2(hp.y + 0.05 - camY, Math.max(0.3, Math.hypot(hp.x - P.pos.x, hp.z - P.pos.z)));
     d.lookAt = cam.position; d.lunge = 0.5;
@@ -545,7 +545,7 @@ export function openHorror(box, K) {
     menu(`<h1>FOSSIL</h1><h2>Ebene -3</h2>
       <button class="b hv" data-a="new">Neues Spiel</button>${sv > 0 ? `<button class="b hv" data-a="cont">Fortsetzen</button>` : ''}<button class="b hv" data-a="back">Zurück zum Menü</button>
       <p>Ein Forschungslabor tief unter der Erde. Die Tiere sind draußen. Keine Waffen: Licht, Verstecke und Stille sind alles, was du hast.<br><br>
-      Handy: wie eine Taschenlampe halten und drehen zum Umsehen, Kreis zum Laufen. Laptop: W A S D, Maus (Klick zum Festhalten), E Benutzen (im Spind halten: Luft anhalten), F Lampe, Umschalt Rennen, C Ducken, Q Spind verlassen.<br>Kopfhörer empfohlen.</p>`);
+      Handy quer halten: linker Stick laufen, rechter Stick umsehen. Laptop: W A S D, Maus (Klick zum Festhalten), E Benutzen (im Spind halten: Luft anhalten), F Lampe, Umschalt Rennen, C Ducken, Q Spind verlassen.<br>Kopfhörer empfohlen.</p>`);
     if (!Sound.running) sub('Kein Ton? Einmal auf den Bildschirm tippen.', 6);
   }
 
@@ -606,6 +606,8 @@ export function openHorror(box, K) {
     const playing = mode === 'play' && !note && !P.hidden;
     // Bewegung
     if (performance.now() - IN.mvT > 260) { IN.mx = 0; IN.my = 0; }
+    if (performance.now() - IN.lkT > 260) { IN.lx = 0; IN.ly = 0; }
+    if ((IN.lx || IN.ly) && mode === 'play') { const cv = v => Math.sign(v) * Math.pow(Math.abs(v), 1.6); look(cv(IN.lx) * 2.6 * dt, cv(IN.ly) * 1.7 * dt); }
     let mx = IN.mx + (IN.keys.r ? 1 : 0) - (IN.keys.l ? 1 : 0), my = IN.my + (IN.keys.b ? 1 : 0) - (IN.keys.f ? 1 : 0);
     const ml = Math.hypot(mx, my); if (ml > 1) { mx /= ml; my /= ml; }
     if (!playing) mx = my = 0;
@@ -705,6 +707,7 @@ export function openHorror(box, K) {
     },
     onData(d) {
       if (d.t === 'mv') { IN.mx = d.x; IN.my = d.y; IN.mvT = performance.now(); return true; }
+      if (d.t === 'lk2') { IN.lx = d.x; IN.ly = d.y; IN.lkT = performance.now(); return true; }
       if (d.t === 'lk') { if (mode === 'play') look(d.x * Math.PI / 180 * 1.25, d.y * Math.PI / 180 * 1.25); return true; }
       if (d.t === 'm' && mode === 'play') return true;
       return false;

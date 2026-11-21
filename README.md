@@ -56,5 +56,6 @@ Tastatur am Laptop: Esc = HOME, Leertaste = A, Rücktaste = B, Pfeile bewegen de
 - Zwei Raubsaurier streifen durch das Labor. Sie sehen dich im Licht, hören Rennen und Türen und öffnen normale Türen selbst. Direkt in die Augen geleuchtet erstarren sie kurz. Im Biodom lebt etwas viel Größeres.
 - Verstecken in Spinden. Steht ein Tier davor, Benutzen gedrückt halten, um die Luft anzuhalten.
 - Ablauf: Sicherheitskarte holen, Ersatzsicherung aus dem Lager, Generator starten, dann zum Notausgang. Fluchtpläne an den Wänden zeigen die Karte. Der Fortschritt wird gespeichert.
-- Handy: wie eine Taschenlampe halten, drehen zum Umsehen, Kreis zum Laufen. Laptop: W A S D, Maus, E Benutzen (halten im Spind), F Lampe, Umschalt Rennen, C Ducken, Q Spind verlassen.
+- Handy quer halten wie einen Controller: linker Stick laufen, rechter Stick umsehen, dazwischen Benutzen, Lampe, Rennen, Ducken. Laptop: W A S D, Maus, E Benutzen (halten im Spind), F Lampe, Umschalt Rennen, C Ducken, Q Spind verlassen.
+- Die Saurier sind durchgehende, mit Knochen bewegte Modelle mit Beinen per inverser Kinematik.
 - `check.html` prüft, ob ein Browser WebRTC und WebGL 2 kann.

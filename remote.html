@@ -81,6 +81,13 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
 .pad-stick i{position:absolute;left:50%;top:50%;width:38%;height:38%;margin:-19% 0 0 -19%;border-radius:50%;background:radial-gradient(circle at 40% 35%,#8a9096,#4a4f54);box-shadow:0 4px 10px rgba(0,0,0,.6);pointer-events:none}
 .pad-stick span{position:absolute;left:0;right:0;bottom:-26px;text-align:center;font-size:13px;color:#888}
 #pad.dark{background:#0d0e10;color:#bbb}#pad.dark .pad-hint{color:#999}
+.twin{position:fixed;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:space-between;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));background:#0d0e10;gap:10px;touch-action:none}
+.twin .pad-stick{width:min(40vh,42vw,260px)}
+.tw-c{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.tw-c .tw-t{color:#777;font-size:13px;font-weight:800;text-align:center}
+.tw-c .pad-btns{flex-wrap:wrap;gap:8px}.tw-c .pad-btns button{min-height:54px;flex:1 1 40%;font-size:15px;padding:6px}
+.tw-rot{display:none;position:fixed;top:0;right:0;bottom:0;left:0;background:#0d0e10;color:#ccc;font-weight:900;font-size:22px;align-items:center;justify-content:center;text-align:center;padding:30px;z-index:5}
+@media (orientation:portrait){.twin-on .tw-rot{display:flex}}
 .pad-dpad{position:relative;width:min(56vw,220px);aspect-ratio:1}
 .pad-dpad button{position:absolute;background:linear-gradient(#5c6064,#3d4145);font-size:22px;box-shadow:0 4px 0 #222;border-radius:14px}
 .pad-dpad .u,.pad-dpad .d{left:33%;width:34%;height:36%}.pad-dpad .u{top:0}.pad-dpad .d{bottom:0}
@@ -232,7 +239,8 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
       else if (mode === 'pad' && padCfg && padCfg.look) send({ t: 'lk', x: +ax.toFixed(3), y: +ay.toFixed(3) });
     }
     ax = ay = 0;
-    if (conn && mode === 'pad' && padCfg && padCfg.stick && (stx || sty)) send({ t: 'mv', x: +stx.toFixed(2), y: +sty.toFixed(2) });
+    if (conn && mode === 'pad' && padCfg && (padCfg.stick || padCfg.twin) && (stx || sty)) send({ t: 'mv', x: +stx.toFixed(2), y: +sty.toFixed(2) });
+    if (conn && mode === 'pad' && padCfg && padCfg.twin && (rsx || rsy)) send({ t: 'lk2', x: +rsx.toFixed(2), y: +rsy.toFixed(2) });
   }, 16);
 
   // ---------- Lenkrad: Neigung des quer gehaltenen Handys ----------
@@ -256,6 +264,7 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
     w.classList.toggle('rot', portrait);
     w.style.transform = 'translate(-50%,-50%)' + (portrait ? (gam < 0 ? ' rotate(90deg)' : ' rotate(-90deg)') : '');
   }, 33);
+  window.__setMode = (m, c) => setMode(m, c);
   function setMode(m, cfg) {
     document.querySelectorAll('button.down').forEach(b => { b.classList.remove('down'); send({ t: 'b', b: b.dataset.b, d: 0 }); });
     mode = m; padCfg = m === 'pad' ? (cfg || {}) : null;
@@ -266,7 +275,7 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
   }
   // ---------- Spielfeld-Modus: Tasten, Quiz, Schütteln, Neigen ----------
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  let stx = 0, sty = 0, tb0 = null, tg0 = null, tb = 0, tg = 0, shakeE = 0, shakePeak = 0;
+  let stx = 0, sty = 0, rsx = 0, rsy = 0, tb0 = null, tg0 = null, tb = 0, tg = 0, shakeE = 0, shakePeak = 0;
   function renderPad(c) {
     const col = PCOL[player] || '#1b9fd6';
     const qc = ['#e5242f', '#1b9fd6', '#2eaa4f', '#f0a500'];
@@ -276,19 +285,25 @@ button.down{transform:translateY(3px);filter:brightness(.92)}
     if (c.stick) body += '<div class="pad-stick" id="pad-st"><i></i><span>Laufen</span></div>';
     if (c.dpad) body += '<div class="pad-dpad"><button class="u" data-b="UP">▲</button><button class="d" data-b="DOWN">▼</button><button class="l" data-b="LEFT">◀</button><button class="r" data-b="RIGHT">▶</button></div>';
     if (c.buttons && c.buttons.length) body += '<div class="pad-btns">' + c.buttons.map(b => `<button data-b="${esc(b.b)}" style="background:${b.color || col}">${esc(b.label)}</button>`).join('') + '</div>';
+    if (c.twin) {
+      $('pad').innerHTML = `<div class="twin"><div class="pad-stick" id="pad-st"><i></i><span>Laufen</span></div><div class="tw-c"><div class="tw-t">${esc(c.title || '')}</div><div class="pad-btns">${(c.buttons || []).map(b => `<button data-b="${esc(b.b)}" style="background:${b.color || col}">${esc(b.label)}</button>`).join('')}</div><button class="home" data-b="HOME" aria-label="Home"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 11 L12 3 L21 11 V21 H14 V14 H10 V21 H3Z" fill="#1b9fd6"/></svg></button></div><div class="pad-stick" id="pad-st2"><i></i><span>Umsehen</span></div></div><div class="tw-rot">Handy quer halten</div>`;
+    } else
     $('pad').innerHTML = `<div class="pad-head" style="background:${col}"><span>Spieler ${player}</span><span>${esc(c.title || '')}</span></div><div class="pad-hint">${esc(c.hint || '')}</div><div class="pad-body">${body}</div>
       <div class="pad-foot"><button class="home" data-b="HOME" aria-label="Home" style="box-shadow:0 4px 0 #c4c8cc"><svg viewBox="0 0 24 24" width="24" height="24"><path d="M3 11 L12 3 L21 11 V21 H14 V14 H10 V21 H3Z" fill="#1b9fd6"/></svg></button></div>`;
     $('pad').querySelectorAll('[data-b]').forEach(bindBtn);
     $('pad').classList.toggle('dark', !!c.dark);
-    tb0 = tg0 = null; stx = sty = 0;
-    const st = $('pad-st');
-    if (st) {
+    $('pad').classList.toggle('twin-on', !!c.twin);
+    tb0 = tg0 = null; stx = sty = 0; rsx = rsy = 0;
+    const bindStick = (st, set, endMsg) => {
+      if (!st) return;
       const knob = st.querySelector('i'); let id = null;
-      const mv = e => { if (e.pointerId !== id) return; const r = st.getBoundingClientRect(), R = r.width / 2; let x = (e.clientX - r.left - R) / R, y = (e.clientY - r.top - R) / R; const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } stx = x; sty = y; knob.style.transform = `translate(${x * R * 0.62}px,${y * R * 0.62}px)`; };
-      const end = e => { if (e.pointerId !== id) return; id = null; stx = sty = 0; knob.style.transform = ''; send({ t: 'mv', x: 0, y: 0 }); };
+      const mv = e => { if (e.pointerId !== id) return; const r = st.getBoundingClientRect(), R = r.width / 2; let x = (e.clientX - r.left - R) / R, y = (e.clientY - r.top - R) / R; const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } set(x, y); knob.style.transform = `translate(${x * R * 0.62}px,${y * R * 0.62}px)`; };
+      const end = e => { if (e.pointerId !== id) return; id = null; set(0, 0); knob.style.transform = ''; send(endMsg); };
       st.addEventListener('pointerdown', e => { e.preventDefault(); id = e.pointerId; try { st.setPointerCapture(id); } catch (er) {} mv(e); });
       st.addEventListener('pointermove', mv); st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end);
-    }
+    };
+    bindStick($('pad-st'), (x, y) => { stx = x; sty = y; }, { t: 'mv', x: 0, y: 0 });
+    bindStick($('pad-st2'), (x, y) => { rsx = x; rsy = y; }, { t: 'lk2', x: 0, y: 0 });
   }
   addEventListener('deviceorientation', e => { if (e.beta == null) return; tb = e.beta; tg = e.gamma || 0; if (padCfg && padCfg.tilt && tb0 == null) { tb0 = tb; tg0 = tg; } });
   addEventListener('devicemotion', e => {
