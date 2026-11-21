@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<title>Browser-Check</title>
+<style>
+body{font-family:Arial,sans-serif;background:#eef3f7;color:#222;margin:0;padding:30px}
+h1{font-size:34px;margin:0 0 20px}
+.row{background:#fff;border-radius:12px;padding:16px 22px;margin:10px 0;font-size:24px;display:block}
+.ok{color:#178a2e;font-weight:bold}.bad{color:#c62828;font-weight:bold}.wait{color:#888}
+#sum{font-size:26px;margin-top:24px}
+small{color:#666;font-size:16px}
+</style>
+<script src="lib/peerjs.min.js"></script>
+</head>
+<body>
+<h1>Kann dieser Browser die Konsole?</h1>
+<div class="row">WebRTC vorhanden: <span id="r1" class="wait">prüfe …</span></div>
+<div class="row">Datenkanal funktioniert: <span id="r2" class="wait">prüfe …</span></div>
+<div class="row">Verbindungsserver erreichbar: <span id="r3" class="wait">prüfe …</span></div>
+<div class="row">3D-Grafik (WebGL): <span id="r4" class="wait">prüfe …</span></div>
+<div id="sum"></div>
+<p><small id="ua"></small></p>
+<script>
+var res = {};
+function set(id, ok, txt) {
+  var e = document.getElementById(id);
+  e.className = ok ? 'ok' : 'bad';
+  e.innerHTML = (ok ? 'Ja' : 'Nein') + (txt ? ' (' + txt + ')' : '');
+  res[id] = ok; summary();
+}
+function summary() {
+  if (!('r1' in res && 'r2' in res && 'r3' in res && 'r4' in res)) return;
+  var s = document.getElementById('sum');
+  if (res.r1 && res.r2 && res.r3 && res.r4) s.innerHTML = '<span class="ok">Alles da. Die Konsole sollte hier laufen.</span>';
+  else if (res.r1 && res.r2 && res.r3) s.innerHTML = '<span class="bad">Handy-Verbindung geht, aber 3D fehlt: Kart und Insel-Party laufen hier nicht.</span>';
+  else s.innerHTML = '<span class="bad">Das Handy kann sich mit diesem Browser nicht verbinden. Nimm den Laptop mit HDMI.</span>';
+}
+document.getElementById('ua').textContent = navigator.userAgent;
+
+var PC = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+set('r1', !!PC);
+
+// Datenkanal-Test: zwei Verbindungen innerhalb dieser Seite
+if (!PC) set('r2', false);
+else {
+  try {
+    var a = new PC(), b = new PC(), done = false;
+    var t = setTimeout(function () { if (!done) { done = true; set('r2', false, 'Zeitüberschreitung'); } }, 8000);
+    a.onicecandidate = function (e) { if (e.candidate) b.addIceCandidate(e.candidate); };
+    b.onicecandidate = function (e) { if (e.candidate) a.addIceCandidate(e.candidate); };
+    var ch = a.createDataChannel('test');
+    b.ondatachannel = function (e) {
+      e.channel.onmessage = function (m) { if (!done && m.data === 'hallo') { done = true; clearTimeout(t); set('r2', true); } };
+    };
+    ch.onopen = function () { ch.send('hallo'); };
+    a.createOffer().then(function (o) { return a.setLocalDescription(o); })
+      .then(function () { return b.setRemoteDescription(a.localDescription); })
+      .then(function () { return b.createAnswer(); })
+      .then(function (an) { return b.setLocalDescription(an); })
+      .then(function () { return a.setRemoteDescription(b.localDescription); })
+      ['catch'](function (err) { if (!done) { done = true; clearTimeout(t); set('r2', false, String(err && err.name || err)); } });
+  } catch (err) { set('r2', false, String(err && err.name || err)); }
+}
+
+// PeerJS-Server
+if (!window.Peer || !PC) set('r3', false, !window.Peer ? 'PeerJS lädt nicht' : 'kein WebRTC');
+else {
+  try {
+    var p = new Peer('kk-check-' + Math.random().toString(36).slice(2, 8)), pd = false;
+    var t3 = setTimeout(function () { if (!pd) { pd = true; set('r3', false, 'Zeitüberschreitung'); } }, 10000);
+    p.on('open', function () { if (!pd) { pd = true; clearTimeout(t3); set('r3', true); p.destroy(); } });
+    p.on('error', function (e) { if (!pd) { pd = true; clearTimeout(t3); set('r3', false, e.type || 'Fehler'); } });
+  } catch (err) { set('r3', false, String(err && err.name || err)); }
+}
+
+// WebGL
+try {
+  var c = document.createElement('canvas');
+  var gl2 = c.getContext('webgl2');
+  var gl1 = gl2 ? null : document.createElement('canvas').getContext('webgl');
+  set('r4', !!gl2, gl2 ? 'WebGL 2' : (gl1 ? 'nur WebGL 1, zu alt' : ''));
+} catch (err) { set('r4', false); }
+</script>
+</body>
+</html>
