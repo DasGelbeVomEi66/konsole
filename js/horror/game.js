@@ -24,6 +24,18 @@ const PA = {
   card: 'DURCHSAGE: Unbefugter Zugriff Sicherheitskarte. Gehege C entriegelt.',
   power: 'DURCHSAGE: Hauptversorgung wiederhergestellt. Notausgang West entriegelt. Alle Personen sofort evakuieren.',
 };
+const RADIO = {
+  arrive: 'Hier Leitstelle, hören Sie mich? Auf Ebene -3 meldet sich seit einer Stunde niemand mehr. Kein Strom, keine Kameras.',
+  arrive2: 'Der Generator steht im Ostflügel. Dafür brauchen Sie eine Sicherheitskarte, die liegt im Sicherheitsbüro im Westflügel. In den Gängen hängen Fluchtpläne.',
+  cctv: 'Sie sind im Sicherheitsbüro? Laufen die Kameras? ... Moment. Kamera 2. Da war doch etwas.',
+  card: 'Gut. Bevor Sie zum Generator gehen: Dr. Albers hat sich zuletzt aus Labor 1 gemeldet. Das ist am Nordgang. Sehen Sie bitte nach ihm.',
+  walk: 'Was war das für ein Geräusch? ... Melden Sie sich, wenn Sie etwas sehen.',
+  lab: 'Das klang nicht gut. Hören Sie mir zu: Wenn Sie etwas kommen hören, verstecken Sie sich in einem Spind und halten Sie die Luft an. Die Ersatzsicherung liegt im Lager, Ostflügel.',
+  hide: 'Etwas bewegt sich ganz in Ihrer Nähe. Verstecken Sie sich. Jetzt.',
+  fuse: 'Sie haben die Sicherung? Dann zum Generator. ... Auf meinem Pult blinkt Gehege C. Offen. Es sind zwei.',
+  exit: 'Der Notausgang ist entriegelt. Treppenhaus West, über die Umkleide. Laufen Sie, wenn Sie müssen.',
+};
+const TAPE = { title: 'Diktiergerät Dr. Albers (abgetippt)', lines: ['"03:18. Sie hat die Klappe von innen', 'geöffnet. Ich habe es gesehen.', '', '03:25. Müller ist nicht zurück.', 'Ich höre sie im Schacht über mir.', 'Sie antwortet, wenn ich spreche.', 'Mit meiner Stimme.', '', '03:31. Ich mache das Licht aus.', '!Wer das hört: nicht rennen."'] };
 const GOALS = ['Strom wiederherstellen: Generatorraum im Ostflügel', 'Sicherheitskarte holen: Sicherheitsbüro im Westflügel', 'Ersatzsicherung holen: Lager im Ostflügel', 'Sicherung einsetzen und Generator starten', 'Raus: Notausgang im Treppenhaus West (über die Umkleide)'];
 
 const CSS = `.hr{position:absolute;top:0;right:0;bottom:0;left:0;background:#000;overflow:hidden;font-family:Georgia,'Times New Roman',serif;color:#d8d2c4}
@@ -48,12 +60,14 @@ const CSS = `.hr{position:absolute;top:0;right:0;bottom:0;left:0;background:#000
 .hr-menu .b{display:block;min-width:300px;margin:8px;padding:12px 30px;background:rgba(20,18,14,.6);border:1px solid #5a5446;color:#d8d2c4;font-family:Georgia,serif;font-size:22px;letter-spacing:.08em;transition:background .2s,border-color .2s}
 .hr-menu .b.hover{background:rgba(90,20,14,.65);border-color:#c8a080}
 .hr-menu p{max-width:680px;color:#8a8478;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;margin-top:26px}
+.hr-chap{position:absolute;left:0;right:0;top:36%;text-align:center;font-size:clamp(30px,4vw,56px);letter-spacing:.25em;color:#d8d0bc;text-shadow:0 0 20px #000;opacity:0;transition:opacity 1.5s;pointer-events:none}.hr-chap small{display:block;font-size:14px;letter-spacing:.5em;color:#8a8478;margin-bottom:10px;font-family:Arial,sans-serif}
+.hr-intro{max-width:760px;font-size:clamp(20px,2.2vw,30px);line-height:1.6;color:#cfc6b0;transition:opacity 1.2s}
 .hr-load{position:absolute;bottom:6%;right:5%;font-style:italic;color:#6a6458}`;
 
 export function openHorror(box, K) {
   if (!document.getElementById('hr-css')) { const st = document.createElement('style'); st.id = 'hr-css'; document.head.appendChild(st); }
   document.getElementById('hr-css').textContent = CSS;
-  box.innerHTML = `<div class="hr"><canvas></canvas><div class="hr-slats"></div><div class="hr-dot"></div><div class="hr-hint"></div><div class="hr-sub"></div><div class="hr-goal"></div><div class="hr-inv"></div><div class="hr-breath"><i></i></div>
+  box.innerHTML = `<div class="hr"><canvas></canvas><div class="hr-slats"></div><div class="hr-dot"></div><div class="hr-hint"></div><div class="hr-sub"></div><div class="hr-goal"></div><div class="hr-chap"></div><div class="hr-inv"></div><div class="hr-breath"><i></i></div>
     <div class="hr-note"><img alt="Notiz"><small>A oder B: weglegen</small></div><div class="hr-menu"></div><div class="hr-fade"></div></div>`;
   const root = box.firstChild, q = s => root.querySelector(s), canvas = q('canvas');
   const cursorEl = document.getElementById('cursor');
@@ -160,20 +174,29 @@ export function openHorror(box, K) {
   const P = { pos: new V3(), yaw: 0, pitch: 0, vel: new V3(), eyeK: 0, crouch: false, run: false, stamina: 1, bob: 0, lastStep: 0, lamp: true, lampWas: true, lampDir: new V3(0, 0, -1), moving: 0, hidden: null, breath: 1, holding: false, heavy: 0, yawTarget: null, pitchTarget: null };
   const IN = { mx: 0, my: 0, mvT: 0, lx: 0, ly: 0, lkT: 0, keys: {} };
   let mode = 'load', gen = 0, gtime = 0, waits = [], items = [], note = null;
-  const S = { tension: 0, fear: 0, fade: 1, fadeTarget: 0, fadeSpeed: 1.2, red: 0, shake: 0, power: false, stage: 0, card: false, fuse: false, fuseIn: false, goal: 0, rexSlam: false, noise: [], lit: 0 };
+  const S = { tension: 0, fear: 0, fade: 1, fadeTarget: 0, fadeSpeed: 1.2, red: 0, shake: 0, power: false, ch: 1, f: {}, card: false, fuse: false, fuseIn: false, rexSlam: false, noise: [], lit: 0, blackout: 0, ambT: 20 };
   const raptors = [];
   let rex = null;
   const fwdV = new V3(0, 0, -1);
 
   const sub = (txt, dur = 4, isPa) => { const e = q('.hr-sub'); e.textContent = txt; e.classList.toggle('pa', !!isPa); e.style.opacity = 1; clearTimeout(sub.t); sub.t = setTimeout(() => e.style.opacity = 0, dur * 1000); };
   const sleep = s => new Promise(res => waits.push({ end: gtime + s, res, g: gen }));
+  const until = fn => new Promise(res => waits.push({ fn, res, g: gen }));
   const store = { get: (k, d) => K.store.get(k, d), set: (k, v) => K.store.set(k, v) };
-  function setGoal(i) { S.goal = i; const e = q('.hr-goal'); e.innerHTML = '<b>ZIEL</b>' + GOALS[i]; e.style.opacity = 1; clearTimeout(setGoal.t); setGoal.t = setTimeout(() => e.style.opacity = 0, 9000); }
+  function goalText() {
+    if (S.ch <= 1) return !S.card ? 'Sicherheitskarte holen: Sicherheitsbüro im Westflügel' : !S.f.tape ? 'Nach Dr. Albers sehen: Labor 1 am Nordgang' : 'Ersatzsicherung holen: Lager im Ostflügel';
+    if (S.ch === 2) return 'Ersatzsicherung holen: Lager im Ostflügel';
+    if (S.ch === 3) return S.fuseIn ? 'Generator starten: Hebel ziehen' : 'Sicherung einsetzen und Generator starten: Ostflügel';
+    return 'Raus: Notausgang im Treppenhaus West, über die Umkleide';
+  }
+  function setGoal() { const e = q('.hr-goal'); e.innerHTML = '<b>ZIEL</b>' + goalText(); e.style.opacity = 1; clearTimeout(setGoal.t); setGoal.t = setTimeout(() => e.style.opacity = 0, 9000); }
+  function radio(key, dur) { A.radio(); const t = RADIO[key]; setTimeout(() => !closed && sub('FUNK  ' + t, dur || Math.max(6, t.length / 13), true), 350); }
+  function chapter(n, name) { const e = q('.hr-chap'); e.innerHTML = '<small>KAPITEL ' + n + '</small>' + name; e.style.opacity = 1; clearTimeout(chapter.t); chapter.t = setTimeout(() => e.style.opacity = 0, 4500); }
   function inv() { q('.hr-inv').innerHTML = [S.card ? 'Sicherheitskarte' : '', S.fuse && !S.fuseIn ? 'Ersatzsicherung' : ''].filter(Boolean).join('<br>'); }
   function pa(key) { A.chime(); setTimeout(() => !closed && sub(PA[key], 9, true), 1200); }
 
   function phones(m) {
-    if (m === 'play') K.send({ t: 'mode', m: 'pad', cfg: { title: 'FOSSIL', dark: true, twin: true, buttons: [{ b: 'USE', label: 'Benutzen', color: '#3d4145' }, { b: 'LAMP', label: 'Lampe', color: '#5a4a1a' }, { b: 'RUN', label: 'Rennen', color: '#3d4145' }, { b: 'CROUCH', label: 'Ducken', color: '#3d4145' }] } });
+    if (m === 'play') K.send({ t: 'mode', m: 'pad', cfg: { title: 'FOSSIL', dark: true, twin: true, buttons: [{ b: 'USE', label: 'Benutzen', color: '#3d4145' }, { b: 'LAMP', label: 'Lampe', color: '#5a4a1a' }, { b: 'CROUCH', label: 'Ducken', color: '#3d4145' }] } });
     else if (m === 'hide') K.send({ t: 'mode', m: 'pad', cfg: { title: 'Im Spind', dark: true, twin: true, buttons: [{ b: 'USE', label: 'Luft anhalten', color: '#2a3a4a' }, { b: 'EXIT', label: 'Raus', color: '#3d4145' }] } });
     else K.send({ t: 'mode', m: 'pointer' });
     if (cursorEl) cursorEl.style.visibility = (m === 'play' || m === 'hide') ? 'hidden' : '';
@@ -224,6 +247,7 @@ export function openHorror(box, K) {
 
   // ---------- Leuchten ----------
   function lampLevel(f) {
+    if (S.blackout > 0) return 0;
     if (f.fate <= 1) return 0; // kaputt, sprüht Funken
     if (!S.power) return f.fate === 2 || f.fate === 5 ? 0.55 : 0; // Notbetrieb: nur einzelne
     return f.fate <= 3 ? 0.8 : 1;
@@ -248,6 +272,7 @@ export function openHorror(box, K) {
     for (const e of L.emerg) { const d2 = (e.x - pp.x) ** 2 + (e.z - pp.z) ** 2; const pulse = S.power ? (0.5 + 0.5 * Math.sin(gtime * 6 + e.x)) : 0.8 + 0.2 * Math.sin(gtime * 2 + e.z); e.m.material.emissiveIntensity = 2.5 * pulse; if (d2 < 300) cand.push({ x: e.x, y: e.y, z: e.z, i: 1.8 * pulse, col: 0xff2010, d2: d2 * 1.4, dist: 6 }); }
     { const v = L.vendLight, d2 = (v.x - pp.x) ** 2 + (v.z - pp.z) ** 2; if (d2 < 300) cand.push({ x: v.x, y: v.y, z: v.z, i: 1.2, col: 0xa8d8ff, d2, dist: 5 }); }
     for (const t of L.tanks) { const d2 = (t.x - pp.x) ** 2 + (t.z - pp.z) ** 2; if (d2 < 300) cand.push({ x: t.x, y: 1.4, z: t.z, i: 1.6, col: 0x3aff8a, d2, dist: 5 }); }
+    for (const t of L.terminals) { const d2 = (t.x - pp.x) ** 2 + (t.z - pp.z) ** 2; if (d2 < 200) cand.push({ x: t.x, y: 1.45, z: t.z, i: 0.7, col: 0x3dff7a, d2: d2 * 1.2, dist: 3.5 }); }
     cand.sort((a, b) => a.d2 - b.d2);
     for (let i = 0; i < POOL; i++) {
       const l = pool[i], c = cand[i];
@@ -264,7 +289,7 @@ export function openHorror(box, K) {
       let want = false;
       const near = (p, r) => Math.abs(p.x - d.x) < r && Math.abs(p.z - d.z) < r;
       if (!P.hidden && near(P.pos, 2.2)) { if (d.kind === 'd') want = true; else if (d.kind === 'r' && S.card) want = true; else if (d.kind === 'X' && S.power) want = true; }
-      if (d.kind === 'd') for (const rp of raptors) if (rp.active && near(rp.d.root.position, 2.4)) want = true;
+      if (d.kind === 'd') for (const rp of raptors) if ((rp.active || rp.script) && near(rp.d.root.position, 2.4)) want = true;
       const prev = d.target; d.target = want ? 1 : 0;
       if (prev !== d.target && Math.hypot(d.x - P.pos.x, d.z - P.pos.z) < 25) A.slide(new V3(d.x, 1.2, d.z), want);
       d.open += clamp(d.target - d.open, -dt * 1.8, dt * 1.8);
@@ -300,20 +325,20 @@ export function openHorror(box, K) {
       // angeleuchtet werden spürt sie auch von hinten
       if (P.lamp && dist < 15 && head.clone().sub(cam.position).normalize().dot(fwdV) > 0.93 && los(p, P.pos)) vis = Math.max(vis, 0.55);
     }
-    const aggressive = S.power ? 1.5 : S.card ? 1.2 : 1;
-    if (vis > 0) { rp.meter = Math.min(1.2, rp.meter + dt * (0.45 + vis * 1.5) * (P.crouch ? 0.5 : 1) * (P.lamp ? 1.5 : 1) * aggressive); rp.last.copy(P.pos); }
+    const aggressive = S.power ? 1.4 : S.ch >= 3 ? 1.15 : 1;
+    if (vis > 0) { rp.meter = Math.min(1.2, rp.meter + dt * (0.3 + vis * 0.9) * (P.crouch ? 0.5 : 1) * (P.lamp ? 1.5 : 1) * aggressive); rp.last.copy(P.pos); }
     else rp.meter = Math.max(0, rp.meter - dt * 0.15);
     if (!['hunt', 'sniff', 'stun', 'alert'].includes(rp.state)) for (const n of S.noise) { if (n.done && n.done.includes(rp)) continue; const nd = Math.hypot(n.x - p.x, n.z - p.z); if (nd < n.r) { (n.done = n.done || []).push(rp); rp.state = 'investigate'; goTo(rp, n.x, n.z); rp.t = 0; rp.meter = Math.max(rp.meter, 0.3); } }
     // Zustände
-    let spd = 1.3 * (S.power ? 1.25 : 1), look = null;
+    let spd = 0.95 * (S.power ? 1.15 : 1), look = null;
     if (rp.meter >= 1 && !['hunt', 'sniff', 'alert', 'stun'].includes(rp.state)) { rp.state = 'alert'; rp.t = 0; A.screech(head, 1); S.tension = 1; d.jawOpen = 1; }
     if (rp.state === 'stun') { spd = 0; if (rp.t > 1.3) { rp.state = 'hunt'; rp.t = 0; } }
-    else if (rp.state === 'alert') { spd = 0; look = cam.position; if (rp.t > 0.7) { rp.state = 'hunt'; rp.t = 0; rp.lostT = 0; d.jawOpen = 0.3; } }
+    else if (rp.state === 'alert') { spd = 0; look = cam.position; if (rp.t > 1.1) { rp.state = 'hunt'; rp.t = 0; rp.lostT = 0; d.jawOpen = 0.3; } }
     else if (rp.state === 'patrol') { if (!rp.path || !rp.path.length) { randomGoal(rp); if (Math.random() < 0.35) { rp.state = 'idle'; rp.t = 0; rp.idleT = R(2, 5); } } }
     else if (rp.state === 'idle') { spd = 0; if (rp.t > rp.idleT) rp.state = 'patrol'; look = head.clone().add(new V3(Math.sin(rp.t) * 3, -1.5, Math.cos(rp.t * 0.7) * 3)); }
-    else if (rp.state === 'investigate') { spd = 2.2; if (!rp.path || !rp.path.length) { spd = 0; look = head.clone().add(new V3(Math.sin(rp.t * 1.3) * 3, -0.5, Math.cos(rp.t) * 3)); if (rp.t > 6) rp.state = 'patrol'; } }
+    else if (rp.state === 'investigate') { spd = 1.5; if (!rp.path || !rp.path.length) { spd = 0; look = head.clone().add(new V3(Math.sin(rp.t * 1.3) * 3, -0.5, Math.cos(rp.t) * 3)); if (rp.t > 6) rp.state = 'patrol'; } }
     else if (rp.state === 'hunt') {
-      spd = 4.7 * (S.power ? 1.08 : 1); look = cam.position;
+      spd = 3.4 * (S.power ? 1.1 : 1); look = cam.position;
       if (vis > 0) rp.lostT = 0; else rp.lostT += dt;
       rp.pathT -= dt; if (rp.pathT <= 0) { rp.pathT = 0.4; goTo(rp, rp.last.x, rp.last.z); }
       if (P.hidden && rp.sawHide) { rp.state = 'sniff'; rp.t = 0; rp.sniff = 0; goTo(rp, P.hidden.outX, P.hidden.outZ); }
@@ -392,9 +417,9 @@ export function openHorror(box, K) {
   function setupItems() {
     items = [];
     for (const lk of L.lockers) items.push({ pos: new V3(lk.x - lk.wx * 0.3, 1.2, lk.z - lk.wz * 0.3), r: 1.7, label: 'Verstecken', use: () => hide(lk) });
-    for (const pl of L.plans) items.push({ pos: new V3(pl.x, pl.y, pl.z), r: 1.8, label: 'Fluchtplan', use: () => showImg(mapCanvas(MAP, ROOMS, { c: pl.c + 0.5, r: pl.r + 0.5 }, 'Ziel: ' + GOALS[S.goal])) });
+    for (const pl of L.plans) items.push({ pos: new V3(pl.x, pl.y, pl.z), r: 1.8, label: 'Fluchtplan', use: () => showImg(mapCanvas(MAP, ROOMS, { c: pl.c + 0.5, r: pl.r + 0.5 }, 'Ziel: ' + goalText())) });
     for (const d of L.doors) if (d.kind !== 'd') items.push({ pos: new V3(d.x, 1.3, d.z), r: 2.2, label: 'Tür', use() {
-      if (d.kind === 'r' && !S.card) { A.beep(false); sub('Gesperrt. Sicherheitskarte nötig.', 2.5); if (S.goal === 0) setGoal(1); }
+      if (d.kind === 'r' && !S.card) { A.beep(false); sub('Gesperrt. Sicherheitskarte nötig.', 2.5); setGoal(); }
       else if (d.kind === 'X' && !S.power) { A.beep(false); sub('Notausgang verriegelt. Kein Hauptstrom.', 2.5); }
     }, hideWhen: () => (d.kind === 'r' && S.card) || (d.kind === 'X' && S.power) });
     const noteAt = (id, x, y, z, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.28), new THREE.MeshStandardMaterial({ map: noteTex(id), roughness: 1 })); m.position.set(x, y, z); m.rotation.x = -Math.PI / 2; m.rotation.z = ry; L.group.add(m); items.push({ pos: m.position.clone(), r: 1.8, label: 'Lesen', use: () => showNote(id) }); };
@@ -405,16 +430,21 @@ export function openHorror(box, K) {
     noteAt('arzt', cx(15.5) + 0.4, 0.79, cz(22) + 0.2, -0.4);
     if (!S.card) {
       const card = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.004, 0.054), new THREE.MeshStandardMaterial({ color: '#d8dce0', roughness: 0.4, emissive: new THREE.Color('#203040'), emissiveIntensity: 0.4 })); card.position.set(cx(4.5) + 0.5, 0.785, cz(13) + 0.35); card.rotation.y = 0.4; L.group.add(card);
-      const it = { pos: card.position.clone(), r: 1.6, label: 'Sicherheitskarte nehmen', use() { card.visible = false; S.card = true; A.pickup(); inv(); items.splice(items.indexOf(it), 1); setGoal(S.fuse ? 3 : 2); checkpoint(1); pa('card'); releaseSecond(); } };
+      const it = { pos: card.position.clone(), r: 1.6, label: 'Sicherheitskarte nehmen', use() { card.visible = false; S.card = true; A.pickup(); inv(); items.splice(items.indexOf(it), 1); saveGame(); } };
       items.push(it);
     }
     if (!S.fuse) {
       const fu = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.18, 0.1), L.M.amber); fu.position.set(cx(37.5), 0.99, cz(16.6)); L.group.add(fu);
-      const it = { pos: fu.position.clone(), r: 1.7, label: 'Ersatzsicherung nehmen', use() { fu.visible = false; S.fuse = true; A.pickup(); inv(); items.splice(items.indexOf(it), 1); setGoal(3); checkpoint(2); } };
+      const it = { pos: fu.position.clone(), r: 1.7, label: 'Ersatzsicherung nehmen', use() { fu.visible = false; S.fuse = true; A.pickup(); inv(); items.splice(items.indexOf(it), 1); } };
       items.push(it);
     }
     const g = L.gen;
-    items.push({ pos: g.slot.clone(), r: 1.7, label: 'Sicherungsfach', use() { if (S.fuseIn) return; if (!S.fuse) { A.click(g.slot); sub('Das Fach ist leer. Hier fehlt eine Sicherung.', 3); if (S.goal < 2) setGoal(S.card ? 2 : 1); return; } S.fuseIn = true; g.fuseIn.visible = true; A.click(g.slot); A.pickup(); inv(); sub('Die Sicherung sitzt. Jetzt den Hebel.', 2.5); }, hideWhen: () => S.fuseIn });
+    items.push({ pos: g.slot.clone(), r: 1.7, label: 'Sicherungsfach', use() { if (S.fuseIn) return; if (!S.fuse) { A.click(g.slot); sub('Das Fach ist leer. Hier fehlt eine Sicherung.', 3); return; } S.fuseIn = true; g.fuseIn.visible = true; A.click(g.slot); A.pickup(); inv(); sub('Die Sicherung sitzt. Jetzt den Hebel.', 2.5); }, hideWhen: () => S.fuseIn });
+    // Tonband in Labor 1
+    if (!S.f.tape) { const rec = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.06), L.M.blackPl); rec.position.set(cx(12.5) - 0.6, 0.955, cz(2) + 0.15); rec.rotation.y = 0.5; L.group.add(rec); const led = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.01, 0.01), L.M.red); led.position.set(rec.position.x + 0.03, 0.973, rec.position.z); L.group.add(led);
+      const it = { pos: rec.position.clone(), r: 1.7, label: 'Diktiergerät abspielen', use() { items.splice(items.indexOf(it), 1); A.click(rec.position); led.material = L.M.green; showImg(paperCanvas(TAPE.lines, { title: TAPE.title })); S.f.tapeRead = 1; } }; items.push(it); }
+    // Speicher-Terminals
+    for (const t of L.terminals) items.push({ pos: new V3(t.x, 1.35, t.z), r: 1.8, label: 'Am Terminal speichern', use() { saveGame(t.sx, t.sz, t.yaw); A.beep(true); sub('Fortschritt gespeichert.', 2.5); } });
     items.push({ pos: new V3(g.slot.x, 1.2, g.slot.z + 0.65), r: 1.7, label: 'Hebel ziehen', use() { if (S.power) return; if (!S.fuseIn) { A.click(this.pos); sub('Nichts passiert. Keine Sicherung.', 2); return; } powerOn(); }, hideWhen: () => S.power });
   }
   function aimItem() {
@@ -447,16 +477,88 @@ export function openHorror(box, K) {
   }
 
   // ---------- Fortschritt ----------
-  function checkpoint(stage) { S.stage = Math.max(S.stage, stage); store.set('hr2-stage', S.stage); }
+  function saveGame(x = P.pos.x, z = P.pos.z, yaw = P.yaw) { store.set('hr3-save', { ch: S.ch, card: S.card, fuse: S.fuse, fuseIn: S.fuseIn, power: S.power, f: Object.assign({}, S.f), pos: [x, z, yaw] }); }
   function releaseSecond() { const rp = raptors[1]; if (rp && !rp.active) { rp.active = true; rp.d.root.visible = true; A.screamFar(rp.d.root.position.clone().setY(1)); } }
   async function powerOn() {
     S.power = true; const g = L.gen; g.lever.rotation.x = -0.7; g.led.material = L.M.green; A.click(g.slot); A.powerDown();
-    A.rumble(1.2); S.shake = 0.6; await sleep(1.2); A.alarm(true); pa('power'); setGoal(4); checkpoint(3);
+    A.rumble(1.2); S.shake = 0.6; await sleep(1.2); A.alarm(true); pa('power');
     loops.gen && loops.gen.set(0.06);
-    for (const rp of raptors) { rp.active = true; rp.d.root.visible = true; rp.state = 'investigate'; goTo(rp, g.x, g.z); rp.meter = 0.5; }
+    for (const rp of raptors) { rp.active = true; rp.d.root.visible = true; rp.state = 'investigate'; goTo(rp, g.x, g.z); rp.meter = 0.4; }
+  }
+  // Gescriptete Bewegung eines Tiers (vor seiner Freilassung)
+  function walkScript(rp, pts, speed) { rp.script = { pts: pts.map(([x, z]) => new V3(x, 0, z)), speed }; rp.d.root.position.copy(rp.script.pts[0]); rp.d.root.visible = true; }
+  function stepScript(rp, dt) {
+    const sc = rp.script, d = rp.d, p = d.root.position; if (!sc.pts.length) { rp.script = null; d.root.visible = rp.active; return; }
+    const t = sc.pts[0], dx = t.x - p.x, dz = t.z - p.z, l = Math.hypot(dx, dz);
+    if (l < 0.3) { sc.pts.shift(); return; }
+    d.root.rotation.y += clamp(angDiff(Math.atan2(dx, dz), d.root.rotation.y), -dt * 5, dt * 5);
+    p.x += Math.sin(d.root.rotation.y) * sc.speed * dt; p.z += Math.cos(d.root.rotation.y) * sc.speed * dt; d.speed = sc.speed;
+    rp.stepT -= dt; if (rp.stepT <= 0) { rp.stepT = 0.38; A.claws(new V3(p.x, 0.1, p.z), 2, 0.8); }
+    d.lookAt = null; d.crouch = 0.35; d.update(dt); d.eyeshine(cam.position, fwdV, flash.intensity > 10, 0.2);
+  }
+  // Zufällige Ereignisse für die Stimmung, ohne Gefahr
+  function ambient(dt) {
+    S.ambT -= dt; if (S.ambT > 0) return; S.ambT = R(18, 45);
+    const pick = Math.floor(Math.random() * 6);
+    if (pick === 0) A.vent(new V3(P.pos.x + R(-2, 2), 2.8, P.pos.z + R(-2, 2)));
+    else if (pick === 1) { const [c, r] = navCells[Math.floor(Math.random() * navCells.length)]; A.door(new V3(cx(c), 1, cz(r)), 'bang'); }
+    else if (pick === 2) { for (const f of L.fixtures) if (f.d2 < 150) f.dip = R(0.2, 1.2); A.spark(new V3(P.pos.x, 2.8, P.pos.z)); }
+    else if (pick === 3 && S.ch >= 2) { const rp = raptors.find(r => r.active); if (rp) A.mimic(rp.d.root.position.clone().setY(1.4), 0.6); }
+    else if (pick === 4) { const d = L.doors.filter(d => { const k = Math.hypot(d.x - P.pos.x, d.z - P.pos.z); return k > 12 && k < 28; })[0]; if (d) A.slide(new V3(d.x, 1.2, d.z), true); }
+    else A.rumble(0.35);
+  }
+  async function intro(g) {
+    mode = 'intro'; S.fade = 1; S.fadeTarget = 1; phones('menu');
+    const lines = ['Lindholm-Institut für Paläogenetik.<br>Sonntag, 03:52 Uhr.', 'Der Bereitschaftsdienst ruft an: Stromausfall auf Ebene -3.<br>Seit einer Stunde meldet sich dort niemand.', 'Du bist Techniker. Es soll eine Routinesache sein.', 'Der Aufzug fährt nach unten.'];
+    for (const l of lines) {
+      menu('<div class="hr-intro" style="opacity:0">' + l + '</div>'); await sleep(0.1); if (g !== gen) return;
+      const el = q('.hr-intro'); el.style.opacity = 1; if (l.includes('Aufzug')) { A.rumble(0.8); }
+      await sleep(4.2); if (g !== gen) return; el.style.opacity = 0; await sleep(1.3); if (g !== gen) return;
+    }
+    hideMenu(); A.rumble(1.2); A.metal(new V3(P.pos.x, 2.5, P.pos.z)); S.shake = 0.9;
+    mode = 'play'; phones('play'); S.fadeTarget = 0; S.fadeSpeed = 0.35;
+    for (const f of L.fixtures) if (f.d2 < 100) f.dip = 2.5;
+    await sleep(2); if (g !== gen) return; chapter(1, 'Nachtschicht');
+  }
+  async function story(g) {
+    const al = () => { if (g !== gen || closed) throw 'gen'; };
+    const inRect = (c0, c1, r0, r1) => P.pos.x > c0 * CELL && P.pos.x < (c1 + 1) * CELL && P.pos.z > r0 * CELL && P.pos.z < (r1 + 1) * CELL;
+    try {
+      if (S.ch === 1) {
+        if (!S.f.arrive) { await sleep(5); al(); radio('arrive'); await sleep(9); al(); radio('arrive2'); S.f.arrive = 1; await sleep(9); al(); }
+        setGoal();
+        if (!S.card) {
+          if (!S.f.cctv) { await until(() => inRect(2, 7, 12, 16) || S.card); al(); await sleep(2); al(); radio('cctv'); S.f.cctv = 1; for (const sc of L.screens) sc.material.color && sc.material.color.setScalar(1.6); }
+          await until(() => S.card); al(); await sleep(1); al(); radio('card'); setGoal();
+        }
+        if (!S.f.walk) {
+          await until(() => P.pos.z < cz(5.6) && P.pos.x > cx(9) - 1 && P.pos.x < cx(18)); al();
+          walkScript(raptors[0], [[cx(30), cz(5)], [cx(23), cz(5)], [cx(23), cz(3)], [cx(24.5), cz(1.5)]], 1.3);
+          A.sting(0.6); S.tension = 0.6; S.f.walk = 1; await sleep(6); al(); radio('walk');
+        }
+        if (!S.f.tape) {
+          await until(() => S.f.tapeRead && !note); al(); S.f.tape = 1;
+          // Stromabfall und ein Schrei aus Labor 2
+          S.blackout = 3.5; A.powerDown(); await sleep(1.5); al();
+          A.screech(new V3(cx(23), 1.5, cz(2)), 1); A.sting(1, true); S.tension = 0.9; S.shake = 0.3;
+          await sleep(3); al();
+        }
+        S.ch = 2; const rp = raptors[0]; rp.active = true; rp.d.root.visible = true; rp.d.root.position.set(cx(24.5), 0, cz(1.5)); rp.state = 'idle'; rp.idleT = 25; rp.t = 0;
+        saveGame(); chapter(2, 'Etwas ist hier'); await sleep(2); al(); radio('lab'); setGoal();
+      }
+      if (S.ch === 2) {
+        (async () => { while (!S.f.hideTut && g === gen && S.ch === 2) { await sleep(0.5); const rp = raptors[0]; if (rp.active && Math.hypot(rp.d.root.position.x - P.pos.x, rp.d.root.position.z - P.pos.z) < 13 && !P.hidden) { S.f.hideTut = 1; radio('hide'); } } })();
+        await until(() => S.fuse); al();
+        S.ch = 3; saveGame(); await sleep(1); al(); chapter(3, 'Zwei'); pa('card'); releaseSecond(); await sleep(6); al(); radio('fuse'); setGoal();
+      }
+      if (S.ch === 3) {
+        await until(() => S.power); al(); await sleep(8); al();
+        S.ch = 4; saveGame(); chapter(4, 'Raus'); radio('exit'); setGoal();
+      }
+    } catch (e) { if (e !== 'gen') console.error(e); }
   }
   async function ending() {
-    mode = 'end'; const g = gen; store.set('hr2-stage', 0); store.set('hr2-done', 1);
+    mode = 'end'; const g = gen; store.set('hr3-save', null); store.set('hr2-done', 1);
     S.fadeTarget = 1; S.fadeSpeed = 0.5; A.alarm(false);
     await sleep(2.5); if (g !== gen) return;
     phones('menu');
@@ -486,12 +588,13 @@ export function openHorror(box, K) {
     A.duck(1, 1); S.red = 0; S.shake = 0; P.yawTarget = P.pitchTarget = null;
     mode = 'dead'; phones('menu');
     menu(`<h1 style="font-size:clamp(40px,6vw,90px);letter-spacing:.2em">GEFUNDEN</h1><h2>${['Sie hat deinen Atem gehört.', 'Zu laut, zu nah, zu langsam.', 'Im Dunkeln ist sie schneller als du.'][Math.floor(Math.random() * 3)]}</h2>
-      <button class="b hv" data-a="retry">Vom letzten Fortschritt</button><button class="b hv" data-a="title">Hauptmenü</button>`);
+      <button class="b hv" data-a="retry">Letzten Spielstand laden</button><button class="b hv" data-a="title">Hauptmenü</button>`);
   }
 
   // ---------- Spielstart ----------
   const loops = {};
-  function resetWorld(stage) {
+  function resetWorld(sv) {
+    sv = sv || { ch: 1, f: {} };
     gen++; waits = [];
     if (L) scene.remove(L.group);
     for (const rp of raptors) scene.remove(rp.d.root); raptors.length = 0; if (rex) scene.remove(rex.d.root);
@@ -499,53 +602,50 @@ export function openHorror(box, K) {
     A.alarm(false);
     L = buildLab(); L.M = labMaterials(); scene.add(L.group);
     L.doorMap = {}; for (const d of L.doors) L.doorMap[d.r * GW + d.c] = d;
-    S.card = stage >= 1; S.fuse = stage >= 2; S.fuseIn = stage >= 3; S.power = stage >= 3; S.stage = stage; S.noise = []; S.tension = 0.2; S.red = 0; S.rexSlam = false;
+    S.ch = sv.ch || 1; S.f = Object.assign({}, sv.f || {}); S.card = !!sv.card; S.fuse = !!sv.fuse; S.fuseIn = !!sv.fuseIn; S.power = !!sv.power;
+    S.noise = []; S.tension = 0.15; S.red = 0; S.rexSlam = false; S.blackout = 0; S.ambT = 25;
     for (const f of L.fixtures) { f.cur = 0; f.spark = f.fate <= 1; }
-    if (S.fuseIn) { L.gen.fuseIn.visible = true; L.gen.lever.rotation.x = -0.7; L.gen.led.material = L.M.green; }
+    if (S.fuseIn) { L.gen.fuseIn.visible = true; } if (S.power) { L.gen.lever.rotation.x = -0.7; L.gen.led.material = L.M.green; }
     setupItems(); inv();
-    raptors.push(makeRaptor(23, 2, 'K-7'), makeRaptor(25, 23, 'K-9'));
-    raptors[0].active = true; raptors[1].active = stage >= 1;
+    raptors.push(makeRaptor(24, 2, 'K-7'), makeRaptor(25, 23, 'K-9'));
+    raptors[0].active = S.ch >= 2; raptors[1].active = S.ch >= 3;
     rex = { d: makeDino('rex'), mode: 'wander', t: 0, stepT: 0, target: null, pause: 0 }; scene.add(rex.d.root); rex.d.root.position.set(cx(22), 0, cz(12));
     L.steam.forEach((s, i) => loops['steam' + i] = A.loop('steam', new V3(s.x, s.y, s.z)));
     loops.hum = A.loop('hum', new V3(cx(29.5), 1.2, cz(2)));
     loops.gen = A.loop('gen', new V3(cx(36.5), 1.2, cz(8.5))); loops.gen.set(S.power ? 0.06 : 0);
     if (S.power) A.alarm(true);
-    const spawn = [[cx(2) + 1, cz(25) + 0.6, 0], [cx(4.5), cz(14.5), -Math.PI / 2], [cx(36), cz(15), Math.PI / 2], [cx(35), cz(9.5), Math.PI / 2]][stage] || [cx(2) + 1, cz(25) + 0.6, 0];
-    P.pos.set(spawn[0], 0, spawn[1]); P.yaw = spawn[2]; P.pitch = 0; P.vel.set(0, 0, 0); P.hidden = null; P.holding = false; P.breath = 1; P.crouch = false; P.lamp = true; P.heavy = 0;
+    const sp = sv.pos || [cx(2) + 1, cz(25) + 0.6, 0];
+    P.pos.set(sp[0], 0, sp[1]); P.yaw = sp[2]; P.pitch = 0; P.vel.set(0, 0, 0); P.hidden = null; P.holding = false; P.breath = 1; P.crouch = false; P.lamp = true; P.heavy = 0; P.stamina = 1;
     q('.hr-slats').style.display = 'none'; q('.hr-breath').style.display = 'none'; q('.hr-note').style.display = 'none'; note = null;
-    placeRaptorsAway(); if (stage === 0) raptors[0].d.root.position.set(cx(23), 0, cz(2));
+    placeRaptorsAway();
     for (const rp of raptors) rp.d.root.visible = rp.active;
   }
-  async function start(stage) {
-    resetWorld(stage); hideMenu(); mode = 'play'; phones('play'); S.fade = 1; S.fadeTarget = 0; S.fadeSpeed = 0.5;
-    const g = gen;
-    if (stage === 0) {
-      A.rumble(1); S.shake = 0.5;
-      await sleep(3); if (g !== gen) return; pa('start');
-      await sleep(10); if (g !== gen) return; setGoal(0);
-    } else setGoal([0, 2, 3, 4][stage]);
+  async function start(sv, fresh) {
+    resetWorld(sv); hideMenu(); const g = gen;
+    if (fresh) { await intro(g); if (g !== gen) return; }
+    else { mode = 'play'; phones('play'); S.fade = 1; S.fadeTarget = 0; S.fadeSpeed = 0.5; setTimeout(() => !closed && g === gen && setGoal(), 1500); }
     if (!Sound.running) sub('Kein Ton? Einmal auf den Bildschirm tippen.', 5);
+    story(g);
   }
 
   // ---------- Menüs ----------
   function menu(html) { const m = q('.hr-menu'); m.innerHTML = html; m.style.display = 'flex'; m.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => act(b.dataset.a))); }
   function hideMenu() { q('.hr-menu').style.display = 'none'; }
   function act(a) {
-    if (a === 'new') { store.set('hr2-stage', 0); start(0); }
-    else if (a === 'cont') start(store.get('hr2-stage', 0));
-    else if (a === 'retry') start(S.stage);
+    if (a === 'new') { store.set('hr3-save', null); start(null, true); }
+    else if (a === 'cont' || a === 'retry') { const sv = store.get('hr3-save', null); start(sv, !sv); }
     else if (a === 'title') title();
     else if (a === 'back') K.closeChannel();
   }
   function title() {
-    resetWorld(0); mode = 'title'; phones('menu'); S.fade = 1; S.fadeTarget = 0; S.fadeSpeed = 0.4;
+    resetWorld(null); mode = 'title'; phones('menu'); S.fade = 1; S.fadeTarget = 0; S.fadeSpeed = 0.4;
     for (const rp of raptors) rp.d.root.visible = false;
     P.pos.set(cx(20.5), 0, cz(18.3)); P.yaw = 0; P.pitch = 0.12; P.lamp = true;
-    const sv = store.get('hr2-stage', 0);
+    const sv = store.get('hr3-save', null);
     menu(`<h1>FOSSIL</h1><h2>Ebene -3</h2>
-      <button class="b hv" data-a="new">Neues Spiel</button>${sv > 0 ? `<button class="b hv" data-a="cont">Fortsetzen</button>` : ''}<button class="b hv" data-a="back">Zurück zum Menü</button>
+      <button class="b hv" data-a="new">Neues Spiel</button>${sv ? `<button class="b hv" data-a="cont">Fortsetzen (Kapitel ${sv.ch})</button>` : ''}<button class="b hv" data-a="back">Zurück zum Menü</button>
       <p>Ein Forschungslabor tief unter der Erde. Die Tiere sind draußen. Keine Waffen: Licht, Verstecke und Stille sind alles, was du hast.<br><br>
-      Handy quer halten: linker Stick laufen, rechter Stick umsehen. Laptop: W A S D, Maus (Klick zum Festhalten), E Benutzen (im Spind halten: Luft anhalten), F Lampe, Umschalt Rennen, C Ducken, Q Spind verlassen.<br>Kopfhörer empfohlen.</p>`);
+      Handy quer halten: linker Stick laufen (ganz nach vorn = rennen), rechter Stick umsehen. Speichern an den grünen Terminals. Laptop: W A S D, Maus (Klick zum Festhalten), E Benutzen (im Spind halten: Luft anhalten), F Lampe, Umschalt Rennen, C Ducken, Q Spind verlassen.<br>Kopfhörer empfohlen.</p>`);
     if (!Sound.running) sub('Kein Ton? Einmal auf den Bildschirm tippen.', 6);
   }
 
@@ -611,9 +711,12 @@ export function openHorror(box, K) {
     let mx = IN.mx + (IN.keys.r ? 1 : 0) - (IN.keys.l ? 1 : 0), my = IN.my + (IN.keys.b ? 1 : 0) - (IN.keys.f ? 1 : 0);
     const ml = Math.hypot(mx, my); if (ml > 1) { mx /= ml; my /= ml; }
     if (!playing) mx = my = 0;
-    const running = (P.run || IN.keys.run) && P.stamina > 0.05 && my < -0.3 && !P.crouch;
+    const stickM = Math.hypot(IN.mx, IN.my), keyMove = IN.keys.f || IN.keys.b || IN.keys.l || IN.keys.r;
+    const running = ((P.run || IN.keys.run) || (stickM > 0.92 && IN.my < -0.6)) && P.stamina > 0.05 && my < -0.3 && !P.crouch;
+    const walkK = keyMove ? 1 : clamp(stickM / 0.85, 0, 1);
     if (running) { P.stamina = Math.max(0, P.stamina - dt / 6); P.heavy = Math.min(1, P.heavy + dt / 4); } else { P.stamina = Math.min(1, P.stamina + dt / (ml > 0.1 ? 10 : 5)); P.heavy = Math.max(0, P.heavy - dt / 8); }
-    const speed = P.crouch ? 0.8 : running ? 4.3 : 1.55;
+    const speed = (P.crouch ? 0.8 : running ? 4.0 : 1.55) * (running ? 1 : walkK);
+    if (ml > 0.01) { mx /= ml; my /= ml; }
     const fw = new V3(-Math.sin(P.yaw), 0, -Math.cos(P.yaw)); right.set(Math.cos(P.yaw), 0, -Math.sin(P.yaw));
     tmp.set(0, 0, 0).addScaledVector(fw, -my * speed).addScaledVector(right, mx * speed);
     P.vel.lerp(tmp, Math.min(1, dt * 7));
@@ -634,7 +737,7 @@ export function openHorror(box, K) {
       P.lastStep = stepPh; const [c, r] = cellOf(P.pos.x, P.pos.z), ch = at(c, r);
       const surf = ch === 'g' || ch === 'e' ? 'tile' : ch === 'o' ? 'wood' : ch === 's' || ch === 'x' || ch === 'm' ? 'wet' : 'tile';
       A.step(surf, P.crouch ? 0.3 : running ? 1.3 : 0.7);
-      noise(P.pos, P.crouch ? 1.5 : running ? 15 : 5.5);
+      noise(P.pos, P.crouch ? 1.5 : running ? 14 : sp > 1 ? 5 : 2.5);
     }
     // Atem im Spind
     if (P.hidden) {
@@ -665,12 +768,15 @@ export function openHorror(box, K) {
     // Tiere
     if (mode === 'play' || mode === 'hiding') { for (const rp of raptors) if (rp.active && mode !== 'dying') updateRaptor(rp, dt); }
     else if (mode === 'dying') for (const rp of raptors) { const d = rp.d; if (d.lunge > 0) { d.lunge -= dt; d.root.position.addScaledVector(new V3(Math.sin(d.root.rotation.y), 0, Math.cos(d.root.rotation.y)), dt * 0.8); } d.update(dt); d.eyeshine(cam.position, fwdV, true, 0.3); }
+    for (const rp of raptors) if (rp.script && (mode === 'play' || mode === 'hiding')) stepScript(rp, dt);
+    if (mode === 'play') ambient(dt);
+    if (S.blackout > 0) S.blackout -= dt;
     updateRex(dt);
     if (mode === 'play' && !S.rexSlam && rex.mode === 'wander') for (const gl of galleries) if (Math.hypot(P.pos.x - gl.x, P.pos.z - gl.z) < 2.6) { S.rexSlam = true; rex.mode = 'charge'; rex.glassPt = gl.glass; const dx = gl.glass.x - gl.x, dz = gl.glass.z - gl.z, l = Math.hypot(dx, dz); rex.d.root.position.set(gl.glass.x + dx / l * 14, 0, gl.glass.z + dz / l * 14); A.growl(rex.d.root.position.clone().setY(3), 2, 1, true); }
     if (mode === 'play' && S.power && !P.hidden && P.pos.z < cz(2.3) && P.pos.x < cx(4.5)) ending();
 
     // Stimmung
-    if (mode === 'play') S.tension = Math.max(0.15 + S.stage * 0.08, S.tension - dt * 0.06);
+    if (mode === 'play') S.tension = Math.max(0.1 + S.ch * 0.07, S.tension - dt * 0.05);
     S.fear += ((mode === 'play' || mode === 'dying' || mode === 'hiding' ? S.tension : 0.2) - S.fear) * Math.min(1, dt * 1.5);
     S.shake = Math.max(0, S.shake - dt * 1.4);
     A.mood(S.fear, 0, S.power, 1);
@@ -694,7 +800,7 @@ export function openHorror(box, K) {
       steamPts = makeParticles(400, '#9aa4a8', 1.2, false); scene.add(steamPts.pts);
       sparkPts = makeParticles(300, '#ffc070', 0.05, true); scene.add(sparkPts.pts);
       resize(); title();
-      window.__hr = { get t() { return gtime; }, P, S, raptors, get rex() { return rex; }, start, die, get mode() { return mode; }, cam, scene, renderer, items: () => items, button, get L() { return L; }, aim: () => { const a = aimItem(); return a ? a.label : null; }, hide, unhide, powerOn };
+      window.__hr = { saveGame, get t() { return gtime; }, P, S, raptors, get rex() { return rex; }, start, die, get mode() { return mode; }, cam, scene, renderer, items: () => items, button, get L() { return L; }, aim: () => { const a = aimItem(); return a ? a.label : null; }, hide, unhide, powerOn };
     } catch (e) { console.error(e); q('.hr-menu').innerHTML = '<h2>Fehler beim Laden: ' + e.message + '</h2>'; }
   }, 50);
 
@@ -702,7 +808,7 @@ export function openHorror(box, K) {
     onFrame(dt) { if (closed || !A || !L || paused) return; dt = Math.min(dt, 0.05); update(dt); post.render(); },
     onButton(name, down) {
       if (mode === 'play') return button(name, down);
-      if (name === 'B' && (mode === 'hiding' || mode === 'dying' || mode === 'load')) return true;
+      if (name === 'B' && (mode === 'hiding' || mode === 'dying' || mode === 'load' || mode === 'intro')) return true;
       return false;
     },
     onData(d) {

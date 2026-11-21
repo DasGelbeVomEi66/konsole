@@ -55,7 +55,8 @@ Tastatur am Laptop: Esc = HOME, Leertaste = A, Rücktaste = B, Pfeile bewegen de
 - Ego-Perspektive, keine Waffen. Ein Forschungslabor tief unter der Erde, rund 80 mal 58 Meter: Gänge mit Rohren und Notbeleuchtung, Labore mit Brutbehältern, Serverraum, Umkleide, Sicherheitsbüro, Kantine, Lager, Generatorraum, ein Wartungsschacht und ein Biodom hinter Panzerglas.
 - Zwei Raubsaurier streifen durch das Labor. Sie sehen dich im Licht, hören Rennen und Türen und öffnen normale Türen selbst. Direkt in die Augen geleuchtet erstarren sie kurz. Im Biodom lebt etwas viel Größeres.
 - Verstecken in Spinden. Steht ein Tier davor, Benutzen gedrückt halten, um die Luft anzuhalten.
-- Ablauf: Sicherheitskarte holen, Ersatzsicherung aus dem Lager, Generator starten, dann zum Notausgang. Fluchtpläne an den Wänden zeigen die Karte. Der Fortschritt wird gespeichert.
-- Handy quer halten wie einen Controller: linker Stick laufen, rechter Stick umsehen, dazwischen Benutzen, Lampe, Rennen, Ducken. Laptop: W A S D, Maus, E Benutzen (halten im Spind), F Lampe, Umschalt Rennen, C Ducken, Q Spind verlassen.
+- Geschichte in vier Kapiteln: Ankunft im Aufzug, Funkkontakt mit der Leitstelle, Sicherheitskarte, die Suche nach Dr. Albers in Labor 1, die Ersatzsicherung, der Generator und die Flucht. Die Tiere tauchen erst nach und nach auf.
+- Speichern an den grünen Terminals, dazu automatisch bei jedem neuen Kapitel. Fluchtpläne an den Wänden zeigen die Karte.
+- Handy quer halten wie einen Controller: linker Stick laufen (je weiter vorn, desto schneller, ganz vorn rennen), rechter Stick umsehen, dazwischen Benutzen, Lampe, Ducken. Laptop: W A S D, Maus, E Benutzen (halten im Spind), F Lampe, Umschalt Rennen, C Ducken, Q Spind verlassen.
 - Die Saurier sind durchgehende, mit Knochen bewegte Modelle mit Beinen per inverser Kinematik.
 - `check.html` prüft, ob ein Browser WebRTC und WebGL 2 kann.

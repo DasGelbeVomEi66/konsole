@@ -379,6 +379,16 @@ export function buildLab() {
   // Fluchtpläne
   const planSpots = [[6, 19, 0, -0.98], [20, 5, 0, 0.98], [9, 11, -0.98, 0], [32, 17, 0.98, 0], [26, 19, 0, -0.98]];
   const plans = planSpots.map(([c, r, dx, dz]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.5), new THREE.MeshStandardMaterial({ map: T.labelTex('FLUCHTPLAN', '#1a6a2a', '#fff', 256, 180), roughness: 0.4 })); m.position.set(cx(c) + dx, 1.5, cz(r) + dz); m.rotation.y = Math.atan2(-dx, -dz); group.add(m); return { x: m.position.x, y: 1.5, z: m.position.z, c, r }; });
+  // Speicher-Terminals an Wänden: [x, z, Blickrichtung des Bildschirms]
+  const terminals = [];
+  for (const [x, z, ry] of [[16 - 0.03, cz(23), -Math.PI / 2], [4 + 0.03, cz(16), Math.PI / 2], [cx(28), 54 - 0.03, Math.PI], [66 - 0.03, cz(12), -Math.PI / 2], [4 + 0.03, cz(9), Math.PI / 2]]) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; group.add(g);
+    const b = new THREE.Mesh(BOX, M.darkMetal); b.scale.set(0.55, 0.8, 0.1); b.position.set(0, 1.35, 0.05); b.castShadow = true; g.add(b);
+    const sc = new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.3), new THREE.MeshBasicMaterial({ map: T.labelTex('SPEICHERN', '#04180a', '#3dff7a', 256, 160) })); sc.position.set(0, 1.45, 0.102); g.add(sc);
+    const kb = new THREE.Mesh(BOX, M.blackPl); kb.scale.set(0.4, 0.04, 0.16); kb.position.set(0, 1.08, 0.14); kb.rotation.x = 0.4; g.add(kb);
+    const nx = Math.sin(ry), nz = Math.cos(ry);
+    terminals.push({ x: x + nx * 0.1, z: z + nz * 0.1, sx: x + nx * 0.9, sz: z + nz * 0.9, yaw: Math.atan2(nx, nz) + Math.PI });
+  }
   // Dampf, Tropfen, Funken
   steam.push({ x: cx(17) + 0.7, y: 2.6, z: cz(5), dir: [0, -0.3, 0.4] }, { x: cx(32), y: 2.7, z: cz(11) + 0.6, dir: [-0.5, -0.2, 0] }, { x: cx(9), y: 2.7, z: cz(17), dir: [0.5, -0.2, 0] }, { x: cx(36) , y: 4.5, z: cz(7), dir: [0, -0.3, 0.3] }, { x: cx(34), y: 2.2, z: cz(24), dir: [0, -0.3, 0.4] });
   drips.push({ x: cx(11), z: cz(5) }, { x: cx(22), z: cz(19) }, { x: cx(32), z: cz(9) }, { x: cx(9), z: cz(15) }, { x: cx(35), z: cz(24) }, { x: cx(36), z: cz(16) });
@@ -394,5 +404,5 @@ export function buildLab() {
 
   mg.build(group);
   group.traverse(o => { if (o.isMesh && o.geometry === BOX) { o.castShadow = o.castShadow || false; } });
-  return { mistMat, group, solids, solidAt, items, fixtures, emerg, lockers, doors, screens, steam, drips, sparks, tanks, blinks, plans, gen: { lever, fuseIn, led: genLed, slot: new THREE.Vector3(cx(36.5) - 2.2, 1.25, cz(8.5) - 0.3), x: cx(36.5) - 2.3, z: cz(8.5) }, secDesk, vendLight };
+  return { terminals, mistMat, group, solids, solidAt, items, fixtures, emerg, lockers, doors, screens, steam, drips, sparks, tanks, blinks, plans, gen: { lever, fuseIn, led: genLed, slot: new THREE.Vector3(cx(36.5) - 2.2, 1.25, cz(8.5) - 0.3), x: cx(36.5) - 2.3, z: cz(8.5) }, secDesk, vendLight };
 }

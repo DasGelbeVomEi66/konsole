@@ -224,6 +224,7 @@ export function makeAudio() {
       o.start(t); o.stop(t + 1.3);
       burst(d, t, 0.25, 0.12 * vol, 'highpass', 3000, 0.7, { a: 0.02 });
     },
+    radio() { const t = now(), d = dest(null); burst(d, t, 0.35, 0.18, 'bandpass', 1800, 0.8, { a: 0.01 }); tone(d, 'square', 1400, t, 0.03, 0.04); burst(d, t + 0.4, 6, 0.025, 'bandpass', 2200, 0.6, { a: 0.2, hold: 4 }); },
     chime() { const t = now(), d = dest(null); [[784, 0], [659, 0.35], [523, 0.7]].forEach(([f, dt]) => { tone(d, 'sine', f, t + dt, 0.9, 0.12, { a: 0.01 }); tone(d, 'sine', f * 2, t + dt, 0.4, 0.03); }); burst(d, t, 3, 0.02, 'bandpass', 1500, 0.5, { a: 0.1, hold: 2 }); },
     slide(pos, open = true) { const t = now(), d = panner(pos, 1.5); burst(d, t, 0.6, 0.35, 'bandpass', open ? 500 : 400, 1.2, { a: 0.05, to: open ? 900 : 250 }); tone(d, 'sawtooth', 70, t, 0.6, 0.05, { lp: 300 }); burst(d, t + 0.55, 0.1, 0.4, 'lowpass', 300, 1, { brown: 1 }); },
     locker(pos, open = true) { const t = now(), d = panner(pos, 1); burst(d, t, 0.05, 0.4, 'bandpass', 2200, 3); for (const f of [420, 690, 1130]) tone(d, 'sine', f * (open ? 1 : 0.9), t + 0.02, 0.35, 0.05); burst(d, t, 0.15, 0.3, 'lowpass', 400, 1, { brown: 1 }); },
