@@ -49,3 +49,12 @@ Tastatur am Laptop: Esc = HOME, Leertaste = A, Rücktaste = B, Pfeile bewegen de
 - Sonnen-Slots: Spielautomat mit 3 Walzen und 5 Gewinnlinien. Einsatz am Handy mit + und −, drehen durch Schütteln oder Tippen.
 - Blackjack für 1 bis 4 Spieler gegen die Bank: Karte, Halten, Verdoppeln, Teilen. Blackjack zahlt 3 zu 2, die Bank steht ab 17.
 - Gespielt wird nur mit Spielchips ohne echten Wert. Jedes Handy hat ein eigenes Chip-Konto, das im Browser gespeichert wird.
+
+## Horror-Kanal (FOSSIL)
+
+- Ego-Perspektive, keine Waffen. Du hast Nachtwache im Lindholm-Institut. Ein Gang wiederholt sich, und mit jeder Runde verändert sich etwas: die Uhr steht, der Schädel in der Vitrine schaut dich an, Fußspuren, Stromausfall, Geräusche in der Lüftung. Am Ende führt der Weg durch den Wintergarten.
+- Die Tiere sind Dinosaurier. Das kleine Tier scheut direktes Licht, das große sieht schlecht, hört aber jeden Schritt.
+- Handy: wie eine Taschenlampe halten, drehen zum Umsehen, Kreis zum Laufen, Tasten für Benutzen, Lampe, Rennen und Ducken.
+- Laptop: W A S D, Maus (Klick zum Festhalten), E Benutzen, F Lampe, Umschalt Rennen, C Ducken.
+- Kopfhörer empfohlen: die Geräusche der Tiere kommen räumlich von dort, wo sie sind. Der Fortschritt wird pro Runde gespeichert.
+- `check.html` prüft, ob ein Browser WebRTC und WebGL 2 kann (zum Beispiel am Fernseher).

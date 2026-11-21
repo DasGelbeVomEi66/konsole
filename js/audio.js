@@ -181,6 +181,7 @@ const Sound = (() => {
   function playMusic(name) {
     if (!ctx) return;
     if (cur === name) return;
+    if (!tracks[name]) { cur = null; return; }
     cur = name; step = 0; next = ctx.currentTime + 0.1;
     if (!timer) timer = setInterval(sched, 25);
   }
@@ -197,6 +198,7 @@ const Sound = (() => {
 
   return {
     init, s,
+    get ctx() { return ctx; }, get out() { return master; }, get verb() { return verb; },
     play(name, ...a) { if (ctx && fx[name]) try { fx[name](...a); } catch (e) {} },
     music: playMusic, stopMusic,
     // Motorgeräusch pro Spieler, Tonhöhe folgt der Geschwindigkeit
