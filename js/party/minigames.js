@@ -36,7 +36,7 @@ function img(src) { const i = new Image(); i.src = src; return i; }
 
 // ---------- Ablauf eines Minispiels ----------
 const TYPE_LABEL = { ffa: 'Jeder gegen jeden', '2v2': '2 gegen 2', '1v3': '1 gegen 3', duel: 'Duell' };
-const MG_CSS = `.mg-ov{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,40,70,.55);z-index:20}
+const MG_CSS = `.mg-ov{position:absolute;top:0;right:0;bottom:0;left:0;display:grid;place-items:center;background:rgba(10,40,70,.55);z-index:20}
 .mg-card{background:#fffaf0;border-radius:32px;border:5px solid #fff;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:22px 32px;width:min(980px,92vw);text-align:center;color:#5c4314;font-family:Nunito,sans-serif}
 .mg-card .ty{display:inline-block;background:#ff7a3d;color:#fff;font-weight:900;border-radius:999px;padding:4px 16px;font-size:16px}
 .mg-card h2{margin:8px 0 4px;font-size:clamp(34px,4.4vw,58px);font-weight:900;color:#1b7fc4;text-shadow:0 4px 0 #cfe9ff}

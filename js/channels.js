@@ -50,8 +50,8 @@ const CH_CSS = `
 .ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px;margin-top:20px;max-height:62vh;overflow:auto}
 .ph-t{aspect-ratio:4/3;border-radius:18px;border:4px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.15);background-size:cover;background-position:center;transition:transform .15s,border-color .15s}
 .ph-t.hover{transform:scale(1.06) rotate(-1deg);border-color:#34bdef}
-.ph-view{position:absolute;inset:0;background:#111;display:none}.ph-view.on{display:block}
-.ph-view img{position:absolute;inset:0 0 90px 0;width:100%;height:calc(100% - 90px);object-fit:contain}
+.ph-view{position:absolute;top:0;right:0;bottom:0;left:0;background:#111;display:none}.ph-view.on{display:block}
+.ph-view img{position:absolute;top:0;right:0;bottom:90px;left:0;width:100%;height:calc(100% - 90px);object-fit:contain}
 .ph-bar{position:absolute;left:0;right:0;bottom:0;height:90px;display:flex;justify-content:center;align-items:center;gap:20px;background:#222}
 .drop{display:inline-block;padding:16px 28px;border:3px dashed #9aa0a5;border-radius:18px;font-weight:800;background:#fff}
 .drop input{display:none}
@@ -84,7 +84,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 // ---------- Avatar ----------
 const AvatarChannel = {
   id: 'avatar', name: 'Avatar-Kanal',
-  tile(el) { el.innerHTML = `<div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,#fff,#dfe6ec);display:grid;place-items:center">${AV.svg(AV.get(), 'style="height:78%;margin-bottom:12%"')}</div>`; },
+  tile(el) { el.innerHTML = `<div style="position:absolute;top:0;right:0;bottom:0;left:0;background:radial-gradient(circle at 50% 40%,#fff,#dfe6ec);display:grid;place-items:center">${AV.svg(AV.get(), 'style="height:78%;margin-bottom:12%"')}</div>`; },
   open(box, K) {
     const body = chFrame(box, 'Avatar-Kanal', K);
     let a = AV.get();
@@ -158,7 +158,7 @@ const WetterChannel = {
   id: 'wetter', name: 'Wetter-Kanal',
   tile(el) {
     const c = K.store.get('kk-wx-cache', null);
-    el.innerHTML = `<div style="position:absolute;inset:0;background:linear-gradient(#7cc6ec,#d7eefa);display:flex;align-items:center;justify-content:center;gap:6%;padding-bottom:12%">
+    el.innerHTML = `<div style="position:absolute;top:0;right:0;bottom:0;left:0;background:linear-gradient(#7cc6ec,#d7eefa);display:flex;align-items:center;justify-content:center;gap:6%;padding-bottom:12%">
       <div style="width:42%">${wxIcon(c ? c.kind : 'part')}</div><div style="font-weight:900;font-size:clamp(20px,2.6vw,38px);color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.25)">${c ? Math.round(c.temp) + '°' : ''}</div></div>`;
   },
   open(box, K) {
@@ -193,7 +193,7 @@ const BoardChannel = {
   id: 'board', name: 'Pinnwand',
   tile(el) {
     const n = (K.store.get('kk-board', []) || []).length;
-    el.innerHTML = `<div style="position:absolute;inset:0;background:#c79a62;background-image:radial-gradient(#b4844c 1.5px,transparent 1.5px);background-size:12px 12px;display:grid;place-items:center;padding-bottom:12%">
+    el.innerHTML = `<div style="position:absolute;top:0;right:0;bottom:0;left:0;background:#c79a62;background-image:radial-gradient(#b4844c 1.5px,transparent 1.5px);background-size:12px 12px;display:grid;place-items:center;padding-bottom:12%">
       <div style="background:#fff8b8;width:46%;aspect-ratio:1;transform:rotate(-5deg);box-shadow:0 4px 10px rgba(0,0,0,.2);display:grid;place-items:center;font-weight:900;font-size:clamp(18px,2.4vw,34px);color:#9a8b3a">${n || '+'}</div></div>`;
   },
   open(box, K) {

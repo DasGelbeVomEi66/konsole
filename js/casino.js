@@ -52,7 +52,7 @@ function cardHTML(c, hidden) {
   return `<div class="cs-card" style="color:${col}"><span class="tl">${c.r}<br>${S.s}</span>${pips}<span class="br">${c.r}<br>${S.s}</span></div>`;
 }
 
-const CSS = `.cs{position:absolute;inset:0;overflow:hidden;font-family:Nunito,sans-serif;color:#fff;background:radial-gradient(circle at 50% 30%,#3a1f6a,#140a2a 70%)}
+const CSS = `.cs{position:absolute;top:0;right:0;bottom:0;left:0;overflow:hidden;font-family:Nunito,sans-serif;color:#fff;background:radial-gradient(circle at 50% 30%,#3a1f6a,#140a2a 70%)}
 .cs-top{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:14px 2.5vw;z-index:5}
 .cs-top h2{margin:0;font-weight:900;font-size:clamp(24px,3vw,38px);color:#ffd23d;text-shadow:0 3px 0 #7a4a00}
 .cs-btn{padding:12px 24px;border-radius:999px;border:4px solid #ffd23d;background:linear-gradient(#5a2fa8,#2e1460);color:#fff;font-weight:900;font-size:19px;transition:transform .12s,box-shadow .12s}
@@ -61,14 +61,14 @@ const CSS = `.cs{position:absolute;inset:0;overflow:hidden;font-family:Nunito,sa
 .cs-btn:disabled{opacity:.45}
 .cs-chips{display:inline-flex;align-items:center;gap:8px;font-weight:900;font-size:22px;background:rgba(0,0,0,.35);border-radius:999px;padding:6px 16px 6px 8px}
 .cs-chip{width:28px;height:28px;border-radius:50%;background:repeating-conic-gradient(#e5242f 0 30deg,#fff 30deg 60deg);border:3px solid #e5242f;box-shadow:inset 0 0 0 5px #e5242f;display:inline-block}
-.cs-lobby{position:absolute;inset:0;display:grid;place-items:center}
+.cs-lobby{position:absolute;top:0;right:0;bottom:0;left:0;display:grid;place-items:center}
 .cs-lob{display:flex;gap:4vw;flex-wrap:wrap;justify-content:center}
 .cs-big{width:min(38vw,440px);border-radius:30px;border:5px solid #ffd23d;background:linear-gradient(#4a248f,#1d0d40);padding:18px;text-align:center;transition:transform .15s,box-shadow .15s;color:#fff}
 .cs-big b{display:block;font-size:clamp(26px,3vw,40px);font-weight:900;color:#ffd23d;margin-top:8px}.cs-big span{font-weight:800;color:#d8c8ff}
 .cs-big canvas{width:100%;border-radius:18px;background:#0c0620}
 .cs-note{font-weight:800;color:#bfa8ff;text-align:center;margin-top:18px;font-size:15px}
 /* Slots */
-.sl{position:absolute;inset:0;display:grid;place-items:center}
+.sl{position:absolute;top:0;right:0;bottom:0;left:0;display:grid;place-items:center}
 .sl-cab{position:relative;width:min(70vw,880px);border-radius:40px 40px 26px 26px;padding:24px 28px 22px;background:linear-gradient(#ff5a8a,#c0185a 40%,#7a0a3a);box-shadow:0 0 0 6px #ffd23d,0 30px 60px rgba(0,0,0,.6),inset 0 4px 0 rgba(255,255,255,.35)}
 .sl-title{text-align:center;font-weight:900;font-size:clamp(28px,3.4vw,46px);color:#fff7c0;text-shadow:0 3px 0 #7a0a3a,0 0 18px #ffd23d;margin-bottom:10px;letter-spacing:.02em}
 .sl-lights{position:absolute;left:14px;right:14px;top:10px;display:flex;justify-content:space-between;pointer-events:none}
@@ -90,7 +90,7 @@ const CSS = `.cs{position:absolute;inset:0;overflow:hidden;font-family:Nunito,sa
 .sl-msg{position:absolute;left:0;right:0;top:12%;text-align:center;font-weight:900;font-size:clamp(40px,6vw,86px);color:#ffe14d;text-shadow:0 5px 0 #7a4a00,0 0 30px #ff9a1f;opacity:0;transform:scale(.6);transition:opacity .25s,transform .3s cubic-bezier(.2,1.6,.4,1);pointer-events:none;z-index:6}
 .sl-msg.on{opacity:1;transform:scale(1)}
 /* Blackjack */
-.bj{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 20%,#1f8a4f,#0d5a32 60%,#073a20)}
+.bj{position:absolute;top:0;right:0;bottom:0;left:0;background:radial-gradient(ellipse at 50% 20%,#1f8a4f,#0d5a32 60%,#073a20)}
 .bj-arc{position:absolute;left:8%;right:8%;top:36%;height:28%;border:4px solid rgba(255,230,140,.35);border-top:0;border-radius:0 0 50% 50%/0 0 100% 100%;pointer-events:none}
 .bj-text{position:absolute;left:0;right:0;top:44%;text-align:center;font-weight:900;color:rgba(255,240,180,.55);font-size:clamp(14px,1.6vw,22px);letter-spacing:.08em;pointer-events:none}
 .bj-dealer{position:absolute;left:50%;top:9%;transform:translateX(-50%);text-align:center}
@@ -100,9 +100,9 @@ const CSS = `.cs{position:absolute;inset:0;overflow:hidden;font-family:Nunito,sa
 @keyframes deal{from{transform:translate(30vw,-30vh) rotate(-40deg);opacity:0}to{transform:none;opacity:1}}
 .cs-card{position:relative;width:clamp(70px,6.2vw,96px);aspect-ratio:5/7;border-radius:10px;background:linear-gradient(#fff,#f1efe8);box-shadow:0 6px 14px rgba(0,0,0,.4);font-weight:900}
 .cs-card .tl,.cs-card .br{position:absolute;font-size:clamp(14px,1.3vw,20px);line-height:1;text-align:center}.cs-card .tl{left:7px;top:6px}.cs-card .br{right:7px;bottom:6px;transform:rotate(180deg)}
-.cs-card .mid{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(34px,3.2vw,50px)}
-.cs-card .face{position:absolute;inset:18% 16%;border-radius:6px;border:2px solid currentColor;display:grid;place-items:center;font-size:clamp(28px,2.6vw,40px);background:linear-gradient(#fff7e0,#ffe9b8)}.cs-card .face small{font-size:.5em;display:block;margin-top:-.6em}
-.cs-card.back{background:repeating-linear-gradient(45deg,#2a3fa8 0 6px,#3550c8 6px 12px);border:4px solid #fff}.cs-card.back i{position:absolute;inset:16%;border:2px solid rgba(255,255,255,.6);border-radius:6px}
+.cs-card .mid{position:absolute;top:0;right:0;bottom:0;left:0;display:grid;place-items:center;font-size:clamp(34px,3.2vw,50px)}
+.cs-card .face{position:absolute;top:18%;right:16%;bottom:18%;left:16%;border-radius:6px;border:2px solid currentColor;display:grid;place-items:center;font-size:clamp(28px,2.6vw,40px);background:linear-gradient(#fff7e0,#ffe9b8)}.cs-card .face small{font-size:.5em;display:block;margin-top:-.6em}
+.cs-card.back{background:repeating-linear-gradient(45deg,#2a3fa8 0 6px,#3550c8 6px 12px);border:4px solid #fff}.cs-card.back i{position:absolute;top:16%;right:16%;bottom:16%;left:16%;border:2px solid rgba(255,255,255,.6);border-radius:6px}
 .bj-seats{position:absolute;left:2%;right:2%;bottom:3%;display:flex;justify-content:space-around;align-items:flex-end;gap:12px}
 .bj-seat{flex:1;max-width:340px;text-align:center;border-radius:22px;padding:10px 8px 12px;background:rgba(0,0,0,.22);border:4px solid transparent;transition:border-color .2s,box-shadow .2s}
 .bj-seat.act{border-color:var(--c);box-shadow:0 0 24px var(--c)}

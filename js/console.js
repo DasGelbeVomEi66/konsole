@@ -1,3 +1,7 @@
+// Ältere Browser (z. B. auf Fernsehern) kennen roundRect noch nicht
+if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) { r = Math.min(typeof r === 'number' ? r : 0, w / 2, h / 2); this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r); this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + w, y, r); this.closePath(); return this; };
+}
 // Konsolen-Kern: Bildschirme, Cursor, Fernbedienung (PeerJS/WebRTC), Menü, HOME-Menü.
 {
   const $ = id => document.getElementById(id);

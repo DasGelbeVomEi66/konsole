@@ -62,8 +62,8 @@ const FruitChannel = (() => {
   </svg>`;
 
   // ---------- Spiel ----------
-  const CSS = `.fg{position:absolute;inset:0;background:#0a2c23;overflow:hidden}.fg canvas{position:absolute;inset:0;width:100%;height:100%}
-  .fg-ov{position:absolute;inset:0;display:none;place-items:center;background:rgba(5,25,20,.45)}.fg-ov.on{display:grid}
+  const CSS = `.fg{position:absolute;top:0;right:0;bottom:0;left:0;background:#0a2c23;overflow:hidden}.fg canvas{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%}
+  .fg-ov{position:absolute;top:0;right:0;bottom:0;left:0;display:none;place-items:center;background:rgba(5,25,20,.45)}.fg-ov.on{display:grid}
   .fg-card{background:rgba(255,255,255,.96);border-radius:30px;border:4px solid #c4c8cc;padding:30px 40px;text-align:center;width:min(860px,92vw);color:#4c5054;box-shadow:0 20px 60px rgba(0,0,0,.35)}
   .fg-card h2{margin:0 0 6px;font-size:clamp(30px,4vw,48px);font-weight:900;color:#2f7d26}.fg-card p{margin:4px 0 18px;font-weight:700;color:#7a7f84}
   .fg-modes{display:flex;gap:22px;justify-content:center;flex-wrap:wrap}.fg-mode{flex:1 1 260px;max-width:340px;padding:22px 18px;border-radius:24px;border:4px solid #c4c8cc;background:linear-gradient(#fff,#eef0f2);transition:transform .15s,border-color .15s,box-shadow .15s}
