@@ -301,7 +301,7 @@ export function openHorror(box, K) {
       if (P.lamp && dist < 15 && head.clone().sub(cam.position).normalize().dot(fwdV) > 0.93 && los(p, P.pos)) vis = Math.max(vis, 0.55);
     }
     const aggressive = S.power ? 1.5 : S.card ? 1.2 : 1;
-    if (vis > 0) { rp.meter = Math.min(1.2, rp.meter + dt * (0.45 + vis * 1.5) * (P.crouch ? 0.5 : 1) * (P.lamp ? 1.5 : 1) * aggressive)); rp.last.copy(P.pos); }
+    if (vis > 0) { rp.meter = Math.min(1.2, rp.meter + dt * (0.45 + vis * 1.5) * (P.crouch ? 0.5 : 1) * (P.lamp ? 1.5 : 1) * aggressive); rp.last.copy(P.pos); }
     else rp.meter = Math.max(0, rp.meter - dt * 0.15);
     if (!['hunt', 'sniff', 'stun', 'alert'].includes(rp.state)) for (const n of S.noise) { if (n.done && n.done.includes(rp)) continue; const nd = Math.hypot(n.x - p.x, n.z - p.z); if (nd < n.r) { (n.done = n.done || []).push(rp); rp.state = 'investigate'; goTo(rp, n.x, n.z); rp.t = 0; rp.meter = Math.max(rp.meter, 0.3); } }
     // Zustände
